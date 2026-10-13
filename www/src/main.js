@@ -225,13 +225,28 @@ $('#close').onclick=closeModal;$('#shade').onclick=closeModal;
 $('#modalBody').addEventListener('click',e=>{
  const b=e.target.closest('button');if(!b)return;
  if(b.id==='resume'){closeModal();return}
- if(b.id==='buyHint'){if(spendCoins(15)){closeModal();const blockers=vehicles.filter(v=>!v.userData.goal&&v.userData.row===2);if(blockers.length){selected=blockers[0];drawSelection();toast('جرّب تحريك المركبة المحددة لإخلاء الممر.')}else toast('حرّك المركبات التي تعيق الوصول للمخرج.')}return}
+ if(b.id==='buyHint'){
+  if(!spendCoins(15))return;
+  closeModal();
+  const blockers=vehicles.filter(v=>{
+   const d=v.userData;if(d.goal)return false;
+   for(let k=0;k<d.len;k++){const r=d.row+(d.dir==='v'?k:0),c=d.col+(d.dir==='h'?k:0);if(r===2&&c>=2&&c<=5)return true}
+   return false;
+  });
+  let choice=null,delta=0;
+  for(const v of blockers){for(const step of [-1,1]){if(canMove(v,step)){choice=v;delta=step;break}}if(choice)break}
+  if(choice){selected=choice;drawSelection();const dir=choice.userData.dir==='v'?(delta<0?'للأعلى':'للأسفل'):(delta<0?'لليسار':'لليمين');toast('حرّك المركبة المحددة خطوة '+dir+' لفتح الممر.')}
+  else toast('الممر يحتاج أكثر من حركة؛ حرّك المركبات القريبة أولًا.');
+  return;
+ }
  if(b.id==='buySkip'){if(!spendCoins(100))return;closeModal();if(levelIndex<totalLevels-1){levelIndex++;resetBoard();toast('تم تجاوز المرحلة مقابل 100 عملة.')}else{won=true;updateHUD();openModal('🏆 انتهت الحملة','أكملت جميع المراحل في هذه النسخة.','<button id="replay" class="primary">العب من البداية</button>')}return}
  if(b.id==='replay'){levelIndex=0;resetBoard();closeModal();return}
  if(b.id==='settings'){openModal('الإعدادات','الصوت والاهتزاز وحفظ التقدم ستُضاف في مرحلة تحسين الجودة.','<button id="resume" class="primary">العودة للعبة</button>');return}
  if(b.id==='levels'){
-  let html='';for(let i=0;i<totalLevels;i+=10){const mode=modes[0];html+='<div class="levelrow"><span>'+mode.icon+' '+mode.ar+'<small>المراحل '+(i+1)+'–'+Math.min(i+10,totalLevels)+'</small></span><button data-level="'+i+'" '+(i>levelIndex?'disabled':'')+'>فتح</button></div>'}
-  openModal('خريطة الحملة','الأنماط تتغير داخل مسار تقدم واحد.',html);return;
+  let html='<div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin-top:12px">';
+  for(let i=0;i<totalLevels;i++){const unlocked=i<=levelIndex,completed=i<levelIndex;html+='<button data-level="'+i+'" '+(unlocked?'':'disabled')+' style="min-height:46px;padding:6px;'+(completed?'background:#245344;border-color:#4c9d7c;':i===levelIndex?'background:#77f0bd;color:#102438;border-color:#b5ffe0;':'')+'">'+(completed?'✓ ':'')+(i+1)+'</button>'}
+  html+='</div><div class="muted" style="margin-top:10px">الأخضر: مكتملة · الفاتح: المرحلة الحالية · المراحل الرمادية مقفلة حتى تتقدم.</div>';
+  openModal('خريطة الحملة','اختر أي مرحلة سبق أن فتحتها.',html);return;
  }
  if(b.dataset.level){const n=Number(b.dataset.level);if(n<=levelIndex){levelIndex=n;resetBoard();closeModal()}return}
 });
