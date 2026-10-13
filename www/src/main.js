@@ -190,7 +190,8 @@ canvas.addEventListener('pointerup',e=>{
 $('#undo').onclick=()=>{if(won||!savedMoves.length){toast('لا توجد حركة للتراجع عنها.');return}const last=savedMoves.pop(),v=vehicles.find(x=>x.userData.id===last.id);if(v){v.userData.row=last.row;v.userData.col=last.col;v.position.x=last.col-2.5+(v.userData.dir==='h'?(v.userData.len-1)/2:0);v.position.z=last.row-2.5+(v.userData.dir==='v'?(v.userData.len-1)/2:0);moves=Math.max(0,moves-1);selected=v;drawSelection();updateHUD()}};
 $('#restart').onclick=()=>{resetBoard();toast('أُعيد ترتيب المرحلة.');};
 $('#next').onclick=()=>{if(!won)return;if(levelIndex<totalLevels-1)levelIndex++;else{openModal('🏆 أكملت Traffic Command!','أكملت جميع المراحل المتاحة في هذه النسخة.','<button id="replay" class="primary">العب من البداية</button>');return}resetBoard();toast('المرحلة التالية!');};
-$('#store').onclick=showStore;\n$('#pause').onclick=()=>openModal('اللعبة متوقفة مؤقتًا','تقدمك محفوظ تلقائيًا على هذا الجهاز.','<button id="resume" class="primary">متابعة اللعب</button><button id="levels">خريطة الحملة</button><button id="settings">الإعدادات</button>');
+$('#store').onclick=showStore;
+$('#pause').onclick=()=>openModal('اللعبة متوقفة مؤقتًا','تقدمك محفوظ تلقائيًا على هذا الجهاز.','<button id="resume" class="primary">متابعة اللعب</button><button id="levels">خريطة الحملة</button><button id="settings">الإعدادات</button>');
 function openModal(title,text,html=''){ $('#modalTitle').textContent=title;$('#modalText').textContent=text;$('#modalBody').innerHTML=html;$('#modal').classList.add('open');$('#shade').classList.add('open');}
 function closeModal(){$('#modal').classList.remove('open');$('#shade').classList.remove('open')}
 $('#close').onclick=closeModal;$('#shade').onclick=closeModal;
