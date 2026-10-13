@@ -53,7 +53,7 @@ const levelName=i=>modes[Math.floor(i/10)%7];
 function toast(s){const el=$('#toast');el.textContent=s;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),1900);}
 function save(){try{localStorage.setItem('trafficPuzzleWorld',JSON.stringify({levelIndex,coins,stars}))}catch{}}
 try{const data=JSON.parse(localStorage.getItem('trafficPuzzleWorld')||'null');if(data){levelIndex=Math.max(0,Math.min(totalLevels-1,Number(data.levelIndex)||0));coins=Math.max(0,Number(data.coins)||0);stars=Math.max(0,Number(data.stars)||0)}}catch{}
-function clearGroup(g){while(g.children.length){const c=g.children.pop();if(c.geometry)c.geometry.dispose();if(c.material&&c.material.dispose)c.material.dispose();}}
+function clearGroup(g){while(g.children.length)g.remove(g.children[g.children.length-1]);}
 function resetBoard(){
  clearGroup(board);clearGroup(decor);objects=[];vehicles=[];selected=null;moves=0;won=false;savedMoves=[];
  const mode=Math.floor(levelIndex/10)%7, difficulty=levelIndex%10+1;
@@ -203,7 +203,7 @@ $('#modalBody').addEventListener('click',e=>{
  }
  if(b.dataset.level){const n=Number(b.dataset.level);if(n<=levelIndex){levelIndex=n;resetBoard();closeModal()}return}
 });
-function resize(){renderer.setSize(innerWidth,innerHeight);const aspect=innerWidth/innerHeight;const h=10;camera.left=-h*aspect/2;camera.right=h*aspect/2;camera.top=h;camera.bottom=-h;camera.updateProjectionMatrix();}
+function resize(){renderer.setSize(innerWidth,innerHeight);const aspect=innerWidth/innerHeight;const viewWidth=8.2;camera.left=-viewWidth/2;camera.right=viewWidth/2;camera.top=viewWidth/aspect/2;camera.bottom=-viewWidth/aspect/2;camera.updateProjectionMatrix();}
 window.addEventListener('resize',resize);resize();
 function animate(){requestAnimationFrame(animate);renderer.render(scene,camera)}
 resetBoard();animate();
