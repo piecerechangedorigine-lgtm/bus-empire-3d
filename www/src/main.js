@@ -37,7 +37,7 @@ function group(parent,x=0,y=0,z=0){const g=new THREE.Group();g.position.set(x,y,
 const floor = cube(scene,0,-.6,0,20,.5,24,M.grass,false);
 const board = group(scene);
 const decor = group(scene);
-let objects=[], vehicles=[], selected=null, levelIndex=0, moves=0, coins=120, stars=0, won=false, savedMoves=[], levelState=null, toastTimer;
+let objects=[], vehicles=[], selected=null, levelIndex=0, moves=0, coins=120, stars=0, completedLevels=[], won=false, savedMoves=[], levelState=null, toastTimer;
 const colors=[M.blue,M.yellow,M.purple,M.orange,M.teal,M.red];
 const modes=[
  {name:'Traffic Command',ar:'التحكم في المرور',desc:'افتح مسار العبور بتحريك المركبات بالترتيب الصحيح.',icon:'🚦'},
@@ -51,8 +51,8 @@ const modes=[
 const totalLevels=30;
 const levelName=i=>modes[0];
 function toast(s){const el=$('#toast');el.textContent=s;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),1900);}
-function save(){try{localStorage.setItem('trafficPuzzleWorld',JSON.stringify({levelIndex,coins,stars}))}catch{}}
-try{const data=JSON.parse(localStorage.getItem('trafficPuzzleWorld')||'null');if(data){levelIndex=Math.max(0,Math.min(totalLevels-1,Number(data.levelIndex)||0));coins=Math.max(0,Number(data.coins)||0);stars=Math.max(0,Number(data.stars)||0)}}catch{}
+function save(){try{localStorage.setItem('trafficPuzzleWorld',JSON.stringify({levelIndex,coins,stars,completedLevels}))}catch{}}
+try{const data=JSON.parse(localStorage.getItem('trafficPuzzleWorld')||'null');if(data){levelIndex=Math.max(0,Math.min(totalLevels-1,Number(data.levelIndex)||0));coins=Math.max(0,Number(data.coins)||0);stars=Math.max(0,Number(data.stars)||0);completedLevels=Array.isArray(data.completedLevels)?data.completedLevels.filter(n=>Number.isInteger(n)&&n>=0&&n<totalLevels):[]}}catch{}
 function clearGroup(g){while(g.children.length)g.remove(g.children[g.children.length-1]);}
 function resetBoard(){
  clearGroup(board);clearGroup(decor);objects=[];vehicles=[];selected=null;moves=0;won=false;savedMoves=[];
@@ -189,12 +189,15 @@ function moveVehicle(v,delta){
  if(d.goal&&d.col+d.len>5)finishLevel();
 }
 function finishLevel(){
- won=true;const earned=moves<=Math.max(3,levelIndex%10+2)?3:moves<=Math.max(6,levelIndex%10+5)?2:1;
- stars+=earned;coins+=20+earned*10;save();updateHUD();
+ won=true;
+ const earned=moves<=Math.max(3,levelIndex%10+2)?3:moves<=Math.max(6,levelIndex%10+5)?2:1;
+ const firstClear=!completedLevels.includes(levelIndex);
+ if(firstClear){completedLevels.push(levelIndex);stars+=earned;coins+=20+earned*10;}
+ save();updateHUD();
  $('#next').disabled=false;$('#mission').textContent='🎉 أحسنت! الطريق مفتوح';
- $('#description').textContent='+'+(20+earned*10)+' عملة · '+earned+' نجوم. أكمل الحملة!';
+ $('#description').textContent=firstClear?'+'+(20+earned*10)+' عملة · '+earned+' نجوم. أكمل الحملة!':'أعدت إكمال هذه المرحلة؛ المكافأة تُمنح مرة واحدة فقط.';
  $('#hint').style.display='block';$('#hint').textContent='مرحلة مكتملة! تابع إلى التحدي التالي.';
- toast('نجحت! +'+(20+earned*10)+' عملة · '+earned+' نجوم');
+ toast(firstClear?'نجحت! +'+(20+earned*10)+' عملة · '+earned+' نجوم':'أُكملت المرحلة من جديد دون تكرار المكافأة.');
 }
 function raycast(e){
  const rect=canvas.getBoundingClientRect(),x=(e.clientX-rect.left)/rect.width*2-1,y=-((e.clientY-rect.top)/rect.height*2-1);
