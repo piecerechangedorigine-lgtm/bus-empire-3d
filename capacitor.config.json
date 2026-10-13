@@ -1,6 +1,6 @@
 {
-  "appId": "com.busempire3d.game",
-  "appName": "Bus Empire 3D",
+  "appId": "com.trafficcommand.puzzle",
+  "appName": "Traffic Command",
   "webDir": "dist",
   "server": {
     "androidScheme": "https"
