@@ -247,7 +247,7 @@ $('#modalBody').addEventListener('click',e=>{
  if(b.id==='settings'){openModal('الإعدادات','الصوت والاهتزاز وحفظ التقدم ستُضاف في مرحلة تحسين الجودة.','<button id="resume" class="primary">العودة للعبة</button>');return}
  if(b.id==='levels'){
   let html='<div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin-top:12px">';
-  for(let i=0;i<totalLevels;i++){const unlocked=i<=levelIndex,completed=i<levelIndex;html+='<button data-level="'+i+'" '+(unlocked?'':'disabled')+' style="min-height:46px;padding:6px;'+(completed?'background:#245344;border-color:#4c9d7c;':i===levelIndex?'background:#77f0bd;color:#102438;border-color:#b5ffe0;':'')+'">'+(completed?'✓ ':'')+(i+1)+'</button>'}
+  for(let i=0;i<totalLevels;i++){const completed=completedLevels.includes(i),unlocked=i<=levelIndex||completed;html+='<button data-level="'+i+'" '+(unlocked?'':'disabled')+' style="min-height:46px;padding:6px;'+(completed?'background:#245344;border-color:#4c9d7c;':i===levelIndex?'background:#77f0bd;color:#102438;border-color:#b5ffe0;':'')+'">'+(completed?'✓ ':'')+(i+1)+'</button>'}
   html+='</div><div class="muted" style="margin-top:10px">الأخضر: مكتملة · الفاتح: المرحلة الحالية · المراحل الرمادية مقفلة حتى تتقدم.</div>';
   openModal('خريطة الحملة','اختر أي مرحلة سبق أن فتحتها.',html);return;
  }
