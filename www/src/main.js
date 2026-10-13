@@ -63,6 +63,33 @@ function resetBoard(){
   cube(board,c-2.5,-.015,r-2.5,.96,.045,.96,mat(mode===2?'#5abce8':mode===3?'#60758a':'#5b6e81'),false);
   if((r+c)%2===0)cube(board,c-2.5,.012,r-2.5,.88,.025,.88,mat(mode===2?'#4eb2df':'#607488'),false);
  }
+ // Miniature city dressing: sidewalks, low-rise blocks, trees and traffic lights around the puzzle.
+ const buildingColors=['#f2bd86','#d8e2ef','#c4d6e7','#f3d7a5','#b6d9d0'];
+ for(let side of [-1,1]){
+  for(let k=0;k<3;k++){
+   const z=-2.6+k*2.55, x=side*4.05;
+   cube(decor,x,-.03,z,.62,.16,1.9,mat('#d7e0e8'),false);
+   const h=1.15+(k%2)*.55;
+   cube(decor,x,.05+h/2,z,.5,h,1.18,mat(buildingColors[(k+(side===1?2:0))%buildingColors.length]),false);
+   for(let wz=-.35;wz<=.4;wz+=.38)for(let wy=.28;wy<h-.12;wy+=.36){
+    cube(decor,x-side*.06,.05+wy,z+wz,.025,.12,.13,M.glass,false);
+   }
+  }
+  for(let k=0;k<3;k++){
+   const z=-2.7+k*2.6,x=side*3.65;
+   const trunk=cube(decor,x,.24,z,.12,.48,.12,M.wood,false);
+   const crown=new THREE.Mesh(new THREE.SphereGeometry(.31,10,8),mat('#3ba96c'));
+   crown.position.set(x,.62,z);crown.castShadow=true;decor.add(crown);
+  }
+ }
+ // Traffic signal posts at the exit make the goal feel like a real city crossing.
+ for(const x of [-3.55,3.55]){
+  cube(decor,x,.48,-.8,.09,.96,.09,M.rubber,false);
+  cube(decor,x,.9,-.8,.24,.42,.18,M.rubber,false);
+  cube(decor,x,.98,-.8,.1,.09,.07,M.red,false);
+  cube(decor,x,.83,-.8,.1,.07,.07,M.yellow,false);
+  cube(decor,x,.69,-.8,.1,.07,.07,M.mint,false);
+ }
  // Exit lane and goal marker
  cube(board,3.52,.02,0,.75,.08,1.0,M.mint,false);
  for(let a=0;a<3;a++)cube(board,3.4,.08,(a-1)*.23,.28,.025,.08,M.white,false);
