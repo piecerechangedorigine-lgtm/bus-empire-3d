@@ -3,7 +3,7 @@ name: Build Bus Empire 3D APK
 on:
   workflow_dispatch:
   push:
-    branches: [main, master]
+    branches: [main, master, 'rebuild/continuous-puzzle-campaign']
 
 permissions:
   contents: read
