@@ -130,11 +130,18 @@ function resetBoard(){
  const template=templates[Math.min(3,Math.floor((difficulty-1)/3))];
  // Add only vertical blockers outside the goal row. Vary the blocking lane and theme.
  let idx=0;
+ const placedCells=new Set();
+ for(const v of vehicles){const d=v.userData;for(let k=0;k<d.len;k++)placedCells.add((d.row+(d.dir==='v'?k:0))+','+(d.col+(d.dir==='h'?k:0)))}
  for(const [r,c,len,dir] of template){
-  if(r===goalRow)continue;
   if(idx>difficulty+1)break;
+  if(r<0||c<0||r+(dir==='v'?len-1:0)>5||c+(dir==='h'?len-1:0)>5)continue;
+  const cells=[];let collision=false;
+  for(let k=0;k<len;k++){const key=(r+(dir==='v'?k:0))+','+(c+(dir==='h'?k:0));if(placedCells.has(key)){collision=true;break}cells.push(key)}
+  if(collision)continue;
   const kind=mode===1&&idx%3===0?'bus':mode===3&&idx%3===0?'cargo':mode===4&&idx===0?'rescue':mode===5&&idx===0?'train':'car';
-  addVehicle('v'+idx,r,c,len,dir,colors[(idx+mode)%colors.length],kind);idx++;
+  addVehicle('v'+idx,r,c,len,dir,colors[(idx+mode)%colors.length],kind);
+  for(const key of cells)placedCells.add(key);
+  idx++;
  }
  // For bridge stages, add visible bridge beams alongside the board; they are part of the same campaign puzzle theme.
  if(mode===2){
