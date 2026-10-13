@@ -1,0 +1,8 @@
+{
+  "appId": "com.busempire3d.game",
+  "appName": "Bus Empire 3D",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  }
+}
