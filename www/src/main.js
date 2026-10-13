@@ -1,14 +1,11 @@
 import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-
 const canvas=document.querySelector('#world');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false});
 renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.6)); renderer.setSize(innerWidth,innerHeight);
 renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap; renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.15;
 const scene=new THREE.Scene(); scene.background=new THREE.Color('#72caff'); scene.fog=new THREE.Fog('#a6e4ff',45,110);
-const camera=new THREE.PerspectiveCamera(42,innerWidth/innerHeight,.1,180); camera.position.set(0,23,29);
-const controls=new OrbitControls(camera,renderer.domElement); controls.enableDamping=true; controls.minDistance=15; controls.maxDistance=44; controls.maxPolarAngle=Math.PI*.48; controls.minPolarAngle=.2; controls.enablePan=false; controls.target.set(0,0,0);
+const camera=new THREE.PerspectiveCamera(42,innerWidth/innerHeight,.1,180); camera.up.set(0,0,-1); camera.position.set(0,48,0.001); camera.lookAt(0,0,0);
 scene.add(new THREE.HemisphereLight('#ffffff','#8298c0',2.1)); const sun=new THREE.DirectionalLight('#fff0c8',3); sun.position.set(-12,28,18); sun.castShadow=true; sun.shadow.mapSize.set(1024,1024); scene.add(sun);
 const mat=c=>new THREE.MeshStandardMaterial({color:c,roughness:.5});
 const m={grass:mat('#57d879'),road:mat('#515f7d'),line:mat('#fff3cf'),pavement:mat('#e2f4ff'),white:mat('#fffdf6'),glass:mat('#a5edff'),rubber:mat('#263148'),yellow:mat('#ffe52b'),cyan:mat('#15d8f4'),pink:mat('#ff42b7'),blue:mat('#2675ff'),green:mat('#27e653'),orange:mat('#ff9419'),purple:mat('#a238ff'),red:mat('#ff3655'),gold:mat('#ffca30'),build:[mat('#ffb26e'),mat('#65c8ff'),mat('#d19aff'),mat('#72e5d0')]};
@@ -43,7 +40,7 @@ document.querySelector('#hire').onclick=()=>{const cost=100+state.drivers*80;if(
 document.querySelector('#run').onclick=()=>{const route=state.routes[state.active],bus=buses.find(b=>!b.userData.driver)||buses[0];if(state.drivers>0){bus.userData.driver=true;bus.userData.route=state.active}state.money+=route.earning;state.passengers+=route.passengers;state.completed++;bus.position.x+=.25;update();toast('Trajet terminé : +'+route.earning+' pièces !')};
 document.querySelector('#routes').onclick=()=>{modal('🗺️ Lignes de transport',state.routes.map((r,i)=>'<div class="item"><div><b>'+r.name+'</b><br>'+r.passengers+' passagers • '+r.earning+' pièces/trajet</div><button data-route="'+i+'">'+(r.unlocked?(state.active===i?'ACTIVE':'CHOISIR'):r.cost+' 🪙')+'</button></div>').join(''));document.querySelectorAll('[data-route]').forEach(b=>b.onclick=()=>{const i=+b.dataset.route,r=state.routes[i];if(!r.unlocked){if(state.money<r.cost)return toast('Pas assez de pièces !');state.money-=r.cost;r.unlocked=true}state.active=i;close();update()})};
 document.querySelector('#city').onclick=()=>{const cost=400*state.level;modal('🏙️ Développer la ville','<div class="item"><div><b>Améliorer la ville</b><br>Niveau '+(state.level+1)+' • coût '+cost+' pièces</div><button id="upgrade">AMÉLIORER</button></div>');document.querySelector('#upgrade').onclick=()=>{if(state.money<cost)return toast('Pas assez de pièces !');state.money-=cost;state.level++;plots.forEach((p,i)=>building(p,i<state.level?state.level:0));close();update();toast('Ville améliorée !')}};
-document.querySelector('#camera').onclick=()=>{camera.position.set(0,18+Math.random()*8,24+Math.random()*10);controls.target.set(0,0,0);toast('Caméra réinitialisée')};
+document.querySelector('#camera').textContent='⬇ VUE DU DESSUS'; document.querySelector('#camera').disabled=true; document.querySelector('#camera').style.opacity='.85';
 let down=null;renderer.domElement.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY}});renderer.domElement.addEventListener('pointerup',e=>{if(!down)return;const dx=e.clientX-down.x,dy=e.clientY-down.y;if(Math.abs(dx)+Math.abs(dy)<8){const ray=new THREE.Raycaster();ray.setFromCamera({x:e.clientX/innerWidth*2-1,y:-(e.clientY/innerHeight)*2+1},camera);const hits=ray.intersectObjects(buses,true);if(hits.length){const b=buses.find(v=>{let o=hits[0].object;while(o&&o.parent!==scene)o=o.parent;return o===v});if(b)toast('Bus #'+b.userData.id+(b.userData.driver?' • conducteur affecté':' • en attente'))}}down=null});
-window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
-function animate(){requestAnimationFrame(animate);controls.update();renderer.render(scene,camera)}update();animate();
+window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.position.set(0,48,0.001);camera.lookAt(0,0,0);camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+function animate(){requestAnimationFrame(animate);renderer.render(scene,camera)}update();animate();
