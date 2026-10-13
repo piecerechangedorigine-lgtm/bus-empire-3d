@@ -163,8 +163,8 @@ function updateHUD(){
  $('#levelbar').style.width=((levelIndex+1)/totalLevels*100)+'%';
  $('#mission').textContent='🚦 '+mode.ar+' · المرحلة '+(levelIndex+1);
  $('#description').textContent=mode.desc;
- $('#next').disabled=!won;$('#hint').style.display=won?'none':'block';
- $('#hint').textContent=levelIndex===0?'اسحب المركبات التي تسدّ الطريق، ثم أخرج المركبة الحمراء من المخرج الأخضر.': 'اسحب المركبات لإخلاء الممر. كل حركة محسوبة!';
+ $('#next').disabled=!won;$('#hint').style.display=(won||moves>0)?'none':'block';
+ $('#hint').textContent='حرّك المركبات التي تسدّ الصف الأوسط، ثم اسحب المركبة الحمراء إلى المخرج الأخضر.';
 }
 function drawSelection(){for(const v of vehicles){v.scale.setScalar(v===selected?1.055:1);}}
 function occupiedCells(ignore=null){
