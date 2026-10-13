@@ -48,15 +48,15 @@ const modes=[
  {name:'Train & Bus Connect',ar:'ربط النقل العام',desc:'نظّم الممرات لتصل وسيلة النقل إلى المخرج.',icon:'🚆'},
  {name:'Park & Flow',ar:'فكّ الاختناق',desc:'أخلِ الساحة بأقل عدد من الحركات.',icon:'🅿️'}
 ];
-const totalLevels=70;
-const levelName=i=>modes[Math.floor(i/10)%7];
+const totalLevels=30;
+const levelName=i=>modes[0];
 function toast(s){const el=$('#toast');el.textContent=s;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),1900);}
 function save(){try{localStorage.setItem('trafficPuzzleWorld',JSON.stringify({levelIndex,coins,stars}))}catch{}}
 try{const data=JSON.parse(localStorage.getItem('trafficPuzzleWorld')||'null');if(data){levelIndex=Math.max(0,Math.min(totalLevels-1,Number(data.levelIndex)||0));coins=Math.max(0,Number(data.coins)||0);stars=Math.max(0,Number(data.stars)||0)}}catch{}
 function clearGroup(g){while(g.children.length)g.remove(g.children[g.children.length-1]);}
 function resetBoard(){
  clearGroup(board);clearGroup(decor);objects=[];vehicles=[];selected=null;moves=0;won=false;savedMoves=[];
- const mode=Math.floor(levelIndex/10)%7, difficulty=levelIndex%10+1;
+ const mode=0, difficulty=levelIndex%10+1;
  const ground=mode===2?M.water:M.road;
  cube(board,0,-.22,0,6.65,.38,6.65,ground,false);
  for(let r=0;r<6;r++)for(let c=0;c<6;c++){
@@ -86,7 +86,7 @@ function resetBoard(){
   }
   const label=kind==='cargo'?M.white:kind==='rescue'?M.white:kind==='train'?M.white:null;
   if(label)cube(v,0,.57,0,.12,.04,.12,label,false);
-  v.position.set(col-2.5,.08,row-2.5);v.userData.baseY=.08;
+  v.position.set(col-2.5+(dir==='h'?(len-1)/2:0),.08,row-2.5+(dir==='v'?(len-1)/2:0));v.userData.baseY=.08;
   board.add(v);vehicles.push(v);objects.push(v);return v;
  };
  // Hand-authored solvable base layout, gradually adds blockers and new visual themes.
@@ -125,7 +125,7 @@ function updateHUD(){
  $('#coins').textContent=coins;$('#level').textContent=(levelIndex+1)+' / '+totalLevels;
  $('#stars').textContent=stars+' ★';$('#moves').textContent=moves;
  $('#levelbar').style.width=((levelIndex+1)/totalLevels*100)+'%';
- $('#mission').textContent=mode.icon+' '+mode.ar+' · المرحلة '+difficulty;
+ $('#mission').textContent='🚦 '+mode.ar+' · المرحلة '+(levelIndex+1);
  $('#description').textContent=mode.desc;
  $('#next').disabled=!won;$('#hint').style.display=won?'none':'block';
  $('#hint').textContent=levelIndex===0?'اسحب المركبات التي تسدّ الطريق، ثم أخرج المركبة الحمراء من المخرج الأخضر.': 'اسحب المركبات لإخلاء الممر. كل حركة محسوبة!';
@@ -156,7 +156,7 @@ function moveVehicle(v,delta){
  if(!steps||!canMove(v,steps)){toast('هذا المسار مغلق. جرّب اتجاهًا آخر.');return}
  savedMoves.push({id:d.id,row:d.row,col:d.col});
  if(d.dir==='v')d.row+=steps;else d.col+=steps;
- v.position.x=d.col-2.5;v.position.z=d.row-2.5;moves++;selected=v;drawSelection();updateHUD();
+ v.position.x=d.col-2.5+(d.dir==='h'?(d.len-1)/2:0);v.position.z=d.row-2.5+(d.dir==='v'?(d.len-1)/2:0);moves++;selected=v;drawSelection();updateHUD();
  if(d.goal&&d.col+d.len>5)finishLevel();
 }
 function finishLevel(){
@@ -185,9 +185,9 @@ canvas.addEventListener('pointerup',e=>{
  }
  pointerStart=null;
 });
-$('#undo').onclick=()=>{if(won||!savedMoves.length){toast('لا توجد حركة للتراجع عنها.');return}const last=savedMoves.pop(),v=vehicles.find(x=>x.userData.id===last.id);if(v){v.userData.row=last.row;v.userData.col=last.col;v.position.x=last.col-2.5;v.position.z=last.row-2.5;moves=Math.max(0,moves-1);selected=v;drawSelection();updateHUD()}};
+$('#undo').onclick=()=>{if(won||!savedMoves.length){toast('لا توجد حركة للتراجع عنها.');return}const last=savedMoves.pop(),v=vehicles.find(x=>x.userData.id===last.id);if(v){v.userData.row=last.row;v.userData.col=last.col;v.position.x=last.col-2.5+(v.userData.dir==='h'?(v.userData.len-1)/2:0);v.position.z=last.row-2.5+(v.userData.dir==='v'?(v.userData.len-1)/2:0);moves=Math.max(0,moves-1);selected=v;drawSelection();updateHUD()}};
 $('#restart').onclick=()=>{resetBoard();toast('أُعيد ترتيب المرحلة.');};
-$('#next').onclick=()=>{if(!won)return;if(levelIndex<totalLevels-1)levelIndex++;else{openModal('🏆 أكملت الحملة!','أكملت جميع المراحل المتاحة في هذه النسخة. سنضيف عوالم جديدة في التحديثات.','<button id="replay" class="primary">العب من البداية</button>');return}resetBoard();toast('المرحلة التالية!');};
+$('#next').onclick=()=>{if(!won)return;if(levelIndex<totalLevels-1)levelIndex++;else{openModal('🏆 أكملت Traffic Command!','أكملت جميع المراحل المتاحة في هذه النسخة.','<button id="replay" class="primary">العب من البداية</button>');return}resetBoard();toast('المرحلة التالية!');};
 $('#pause').onclick=()=>openModal('اللعبة متوقفة مؤقتًا','تقدمك محفوظ تلقائيًا على هذا الجهاز.','<button id="resume" class="primary">متابعة اللعب</button><button id="levels">خريطة الحملة</button><button id="settings">الإعدادات</button>');
 function openModal(title,text,html=''){ $('#modalTitle').textContent=title;$('#modalText').textContent=text;$('#modalBody').innerHTML=html;$('#modal').classList.add('open');$('#shade').classList.add('open');}
 function closeModal(){$('#modal').classList.remove('open');$('#shade').classList.remove('open')}
@@ -198,7 +198,7 @@ $('#modalBody').addEventListener('click',e=>{
  if(b.id==='replay'){levelIndex=0;resetBoard();closeModal();return}
  if(b.id==='settings'){openModal('الإعدادات','الصوت والاهتزاز وحفظ التقدم ستُضاف في مرحلة تحسين الجودة.','<button id="resume" class="primary">العودة للعبة</button>');return}
  if(b.id==='levels'){
-  let html='';for(let i=0;i<totalLevels;i+=10){const mode=modes[Math.floor(i/10)];html+='<div class="levelrow"><span>'+mode.icon+' '+mode.ar+'<small>المراحل '+(i+1)+'–'+Math.min(i+10,totalLevels)+'</small></span><button data-level="'+i+'" '+(i>levelIndex?'disabled':'')+'>فتح</button></div>'}
+  let html='';for(let i=0;i<totalLevels;i+=10){const mode=modes[0];html+='<div class="levelrow"><span>'+mode.icon+' '+mode.ar+'<small>المراحل '+(i+1)+'–'+Math.min(i+10,totalLevels)+'</small></span><button data-level="'+i+'" '+(i>levelIndex?'disabled':'')+'>فتح</button></div>'}
   openModal('خريطة الحملة','الأنماط تتغير داخل مسار تقدم واحد.',html);return;
  }
  if(b.dataset.level){const n=Number(b.dataset.level);if(n<=levelIndex){levelIndex=n;resetBoard();closeModal()}return}
