@@ -95,10 +95,10 @@ function resetBoard(){
  goal.userData.goal=true;
  // These vehicles block the goal lane; moving them vertically creates the opening.
  const templates=[
-  [[0,0,2,'v'],[0,3,2,'v'],[1,1,2,'v'],[1,4,2,'v'],[3,2,2,'v'],[3,5,2,'v'],[4,0,2,'v'],[4,3,2,'v'],[5,1,2,'v']],
-  [[0,1,2,'v'],[0,4,2,'v'],[1,2,2,'v'],[1,5,2,'v'],[3,0,2,'v'],[3,3,2,'v'],[4,2,2,'v'],[4,5,2,'v'],[5,0,2,'v'],[5,4,2,'v']],
-  [[0,0,2,'v'],[0,3,2,'v'],[1,1,2,'v'],[1,4,3,'v'],[3,2,2,'v'],[3,5,2,'v'],[4,0,2,'v'],[4,3,2,'v'],[5,1,2,'v'],[5,5,2,'v']],
-  [[0,0,2,'v'],[0,3,2,'v'],[1,1,3,'v'],[1,4,2,'v'],[3,2,2,'v'],[3,5,2,'v'],[4,0,2,'v'],[4,3,2,'v'],[5,1,2,'v'],[5,5,2,'v']]
+  [[1,2,2,'v'],[1,4,2,'v'],[1,5,2,'v'],[3,0,2,'v'],[3,1,2,'v'],[3,3,2,'v'],[4,4,2,'v'],[4,2,2,'v']],
+  [[1,2,2,'v'],[1,3,2,'v'],[1,5,2,'v'],[3,0,2,'v'],[3,1,2,'v'],[3,4,2,'v'],[4,2,2,'v'],[4,4,2,'v'],[0,0,2,'v']],
+  [[1,2,2,'v'],[1,4,3,'v'],[3,0,2,'v'],[3,1,2,'v'],[3,3,2,'v'],[4,2,2,'v'],[4,4,2,'v'],[0,0,2,'v']],
+  [[1,2,2,'v'],[1,4,2,'v'],[1,5,3,'v'],[3,0,2,'v'],[3,1,2,'v'],[3,3,2,'v'],[4,2,2,'v'],[4,4,2,'v'],[0,0,2,'v']]
  ];
  const template=templates[Math.min(3,Math.floor((difficulty-1)/3))];
  // Add only vertical blockers outside the goal row. Vary the blocking lane and theme.
@@ -142,7 +142,11 @@ function canMove(v,delta){
  for(let n=1;n<=Math.abs(steps);n++){
   const s=Math.sign(steps)*n;
   const r=d.row+(d.dir==='v'?s:0),c=d.col+(d.dir==='h'?s:0);
-  for(let k=0;k<d.len;k++){const rr=r+(d.dir==='v'?k:0),cc=c+(d.dir==='h'?k:0);if(rr<0||cc<0||rr>5||cc>5||occ.has(rr+','+cc))return false;}
+  for(let k=0;k<d.len;k++){
+   const rr=r+(d.dir==='v'?k:0),cc=c+(d.dir==='h'?k:0);
+   if(rr<0||rr>5||cc<0||(!d.goal&&cc>5))return false;
+   if(cc<=5&&occ.has(rr+','+cc))return false;
+  }
  }
  return true;
 }
@@ -173,7 +177,7 @@ canvas.addEventListener('pointerup',e=>{
  if(!pointerStart)return;const dx=e.clientX-pointerStart.x,dy=e.clientY-pointerStart.y;
  if(pointerStart.v&&(Math.abs(dx)+Math.abs(dy)>12)){
   const v=pointerStart.v,dir=v.userData.dir;
-  let delta=dir==='h'?Math.round(dx/70):Math.round(dy/70);
+  let delta=dir==='h'?Math.round(dx/(innerWidth/8.2)):Math.round(dy/(innerWidth/8.2));
   if(!delta){const val=dir==='h'?dx:dy;delta=Math.sign(val);}
   moveVehicle(v,delta);
  }else if(!pointerStart.v){
