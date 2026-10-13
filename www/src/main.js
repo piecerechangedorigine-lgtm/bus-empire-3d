@@ -120,6 +120,8 @@ function resetBoard(){
  // Make the target and pieces sit on the cell centers, with their row/col as source of truth.
  updateHUD();drawSelection();save();
 }
+function spendCoins(amount){if(coins<amount){toast('عملاتك غير كافية. أكمل مراحل أخرى لجمع المزيد.');return false}coins-=amount;save();updateHUD();return true}
+function showStore(){openModal('🪙 متجر Traffic Command','اللعبة مجانية. اجمع العملات باللعب واستعملها للتلميحات أو لتجاوز مرحلة صعبة. الدفع الحقيقي عبر Google Play يحتاج ربط Billing واختباره قبل النشر.', '<div class="levelrow"><span>🧭 تلميح واحد<small>يساعدك على اختيار المركبة المناسبة</small></span><button id="buyHint" class="gold">15 🪙</button></div><div class="levelrow"><span>⏭️ تجاوز المرحلة<small>تجاوز المرحلة الحالية مقابل عملات اللعبة</small></span><button id="buySkip" class="gold">100 🪙</button></div><div class="levelrow"><span>💳 شراء العملات بأموال حقيقية<small>غير مفعّل في هذه النسخة؛ لن نعرض شراءً وهميًا</small></span><button disabled>قريبًا</button></div>');}
 function updateHUD(){
  const mode=levelName(levelIndex),difficulty=levelIndex%10+1;
  $('#coins').textContent=coins;$('#level').textContent=(levelIndex+1)+' / '+totalLevels;
@@ -188,13 +190,15 @@ canvas.addEventListener('pointerup',e=>{
 $('#undo').onclick=()=>{if(won||!savedMoves.length){toast('لا توجد حركة للتراجع عنها.');return}const last=savedMoves.pop(),v=vehicles.find(x=>x.userData.id===last.id);if(v){v.userData.row=last.row;v.userData.col=last.col;v.position.x=last.col-2.5+(v.userData.dir==='h'?(v.userData.len-1)/2:0);v.position.z=last.row-2.5+(v.userData.dir==='v'?(v.userData.len-1)/2:0);moves=Math.max(0,moves-1);selected=v;drawSelection();updateHUD()}};
 $('#restart').onclick=()=>{resetBoard();toast('أُعيد ترتيب المرحلة.');};
 $('#next').onclick=()=>{if(!won)return;if(levelIndex<totalLevels-1)levelIndex++;else{openModal('🏆 أكملت Traffic Command!','أكملت جميع المراحل المتاحة في هذه النسخة.','<button id="replay" class="primary">العب من البداية</button>');return}resetBoard();toast('المرحلة التالية!');};
-$('#pause').onclick=()=>openModal('اللعبة متوقفة مؤقتًا','تقدمك محفوظ تلقائيًا على هذا الجهاز.','<button id="resume" class="primary">متابعة اللعب</button><button id="levels">خريطة الحملة</button><button id="settings">الإعدادات</button>');
+$('#store').onclick=showStore;\n$('#pause').onclick=()=>openModal('اللعبة متوقفة مؤقتًا','تقدمك محفوظ تلقائيًا على هذا الجهاز.','<button id="resume" class="primary">متابعة اللعب</button><button id="levels">خريطة الحملة</button><button id="settings">الإعدادات</button>');
 function openModal(title,text,html=''){ $('#modalTitle').textContent=title;$('#modalText').textContent=text;$('#modalBody').innerHTML=html;$('#modal').classList.add('open');$('#shade').classList.add('open');}
 function closeModal(){$('#modal').classList.remove('open');$('#shade').classList.remove('open')}
 $('#close').onclick=closeModal;$('#shade').onclick=closeModal;
 $('#modalBody').addEventListener('click',e=>{
  const b=e.target.closest('button');if(!b)return;
  if(b.id==='resume'){closeModal();return}
+ if(b.id==='buyHint'){if(spendCoins(15)){closeModal();const blockers=vehicles.filter(v=>!v.userData.goal&&v.userData.row===2);if(blockers.length){selected=blockers[0];drawSelection();toast('جرّب تحريك المركبة المحددة لإخلاء الممر.')}else toast('حرّك المركبات التي تعيق الوصول للمخرج.')}return}
+ if(b.id==='buySkip'){if(!spendCoins(100))return;closeModal();if(levelIndex<totalLevels-1){levelIndex++;resetBoard();toast('تم تجاوز المرحلة مقابل 100 عملة.')}else{won=true;updateHUD();openModal('🏆 انتهت الحملة','أكملت جميع المراحل في هذه النسخة.','<button id="replay" class="primary">العب من البداية</button>')}return}
  if(b.id==='replay'){levelIndex=0;resetBoard();closeModal();return}
  if(b.id==='settings'){openModal('الإعدادات','الصوت والاهتزاز وحفظ التقدم ستُضاف في مرحلة تحسين الجودة.','<button id="resume" class="primary">العودة للعبة</button>');return}
  if(b.id==='levels'){
