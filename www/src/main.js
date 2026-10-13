@@ -244,9 +244,37 @@ $('#modalBody').addEventListener('click',e=>{
    return false;
   });
   let choice=null,delta=0;
-  for(const v of blockers){for(const step of [-1,1]){if(canMove(v,step)){choice=v;delta=step;break}}if(choice)break}
-  if(choice){selected=choice;drawSelection();const dir=choice.userData.dir==='v'?(delta<0?'للأعلى':'للأسفل'):(delta<0?'لليسار':'لليمين');toast('حرّك المركبة المحددة خطوة '+dir+' لفتح الممر.')}
-  else toast('الممر يحتاج أكثر من حركة؛ حرّك المركبات القريبة أولًا.');
+  // Prefer a legal move that removes the blocking vehicle from the target row completely.
+  for(const v of blockers){
+   const d=v.userData;
+   for(const step of [-1,1]){
+    let farthest=0;
+    for(let distance=1;distance<=6;distance++){
+     const candidate=step*distance;
+     if(!canMove(v,candidate))break;
+     farthest=candidate;
+     const rowStart=d.row+(d.dir==='v'?candidate:0);
+     const rowEnd=rowStart+(d.dir==='v'?d.len-1:0);
+     if(d.dir==='v'&&(2<rowStart||2>rowEnd)){choice=v;delta=candidate;break}
+    }
+    if(choice)break;
+    // If no single move clears the row, still suggest the furthest legal step in a useful direction.
+    if(farthest&&!choice){choice=v;delta=farthest}
+   }
+   if(choice){
+    const d2=choice.userData;
+    if(d2.dir==='v'){
+     const newRow=d2.row+delta;
+     if(newRow<=2&&newRow+d2.len-1>=2){
+      const other=delta<0?-1:1;
+      for(let distance=1;distance<=6;distance++){if(!canMove(choice,other*distance))break;delta=other*distance;const rr=d2.row+delta;if(rr>2||rr+d2.len-1<2)break}
+     }
+    }
+    break;
+   }
+  }
+  if(choice){selected=choice;drawSelection();const dir=choice.userData.dir==='v'?(delta<0?'للأعلى':'للأسفل'):(delta<0?'لليسار':'لليمين');toast('حرّك المركبة المحددة '+Math.abs(delta)+' خانة '+dir+' لإخلاء الممر.')}
+  else toast('لا توجد حركة مباشرة تفتح الممر؛ حرّك المركبات المجاورة أولًا.');
   return;
  }
  if(b.id==='buySkip'){if(!spendCoins(100))return;closeModal();if(levelIndex<totalLevels-1){levelIndex++;resetBoard();toast('تم تجاوز المرحلة مقابل 100 عملة.')}else{won=true;updateHUD();openModal('🏆 انتهت الحملة','أكملت جميع المراحل في هذه النسخة.','<button id="replay" class="primary">العب من البداية</button>')}return}
