@@ -132,7 +132,9 @@ function resetBoard(){
   [[1,2,2,'v'],[1,4,3,'v'],[3,0,2,'v'],[3,1,2,'v'],[3,3,2,'v'],[4,2,2,'v'],[4,4,2,'v'],[0,0,2,'v']],
   [[1,2,2,'v'],[1,4,2,'v'],[1,5,3,'v'],[3,0,2,'v'],[3,1,2,'v'],[3,3,2,'v'],[4,2,2,'v'],[4,4,2,'v'],[0,0,2,'v']]
  ];
- const template=templates[Math.min(3,Math.floor((difficulty-1)/3))];
+ const template=templates[levelIndex%templates.length];
+ const mirrorTemplate=Math.floor(levelIndex/templates.length)%2===1;
+ const queueCol=(levelIndex%3)*2;
  // Keep each board within the validated blocker budget so the generated campaign layouts remain solvable.
  let idx=0;
  const placedCells=new Set();
