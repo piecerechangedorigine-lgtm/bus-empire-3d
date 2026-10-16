@@ -14,7 +14,7 @@ function cells(vehicle, row = vehicle.row, col = vehicle.col) {
 function key([row, col]) { return row + ',' + col; }
 
 function createLevel(levelIndex) {
-  const difficulty = levelIndex % 10 + 1;
+  const queueCol = (levelIndex % 3) * 2;
   const vehicles = [
     {id:'goal',row:2,col:0,len:2,dir:'h',goal:true},
     {id:'queueTop',row:0,col:queueCol,len:2,dir:'h',goal:false}
@@ -23,7 +23,6 @@ function createLevel(levelIndex) {
   let idx = 0;
   const template = templates[levelIndex % templates.length];
   const mirrorTemplate = Math.floor(levelIndex / templates.length) % 2 === 1;
-  const queueCol = (levelIndex % 3) * 2;
   for (const [row,col,len,dir] of template) {
     if (idx > 5) break;
     const actualCol = mirrorTemplate ? (dir === 'v' ? 5-col : 6-col-len) : col;
