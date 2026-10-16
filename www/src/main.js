@@ -143,15 +143,16 @@ function resetBoard(){
   if(cells.some(key=>placedCells.has(key)))return false;
   addVehicle(id,row,col,len,'h',color,'car');for(const key of cells)placedCells.add(key);return true;
  };
- addHorizontalQueue('queueTop',0,2,2,M.yellow);
+ addHorizontalQueue('queueTop',0,queueCol,2,M.yellow);
  for(const [r,c,len,dir] of template){
   if(idx>5)break;
-  if(r<0||c<0||r+(dir==='v'?len-1:0)>5||c+(dir==='h'?len-1:0)>5)continue;
+  const actualCol=mirrorTemplate?(dir==='v'?5-c:6-c-len):c;
+  if(r<0||actualCol<0||r+(dir==='v'?len-1:0)>5||actualCol+(dir==='h'?len-1:0)>5)continue;
   const cells=[];let collision=false;
-  for(let k=0;k<len;k++){const key=(r+(dir==='v'?k:0))+','+(c+(dir==='h'?k:0));if(placedCells.has(key)){collision=true;break}cells.push(key)}
+  for(let k=0;k<len;k++){const key=(r+(dir==='v'?k:0))+','+(actualCol+(dir==='h'?k:0));if(placedCells.has(key)){collision=true;break}cells.push(key)}
   if(collision)continue;
   const kind=mode===1&&idx%3===0?'bus':mode===3&&idx%3===0?'cargo':mode===4&&idx===0?'rescue':mode===5&&idx===0?'train':'car';
-  addVehicle('v'+idx,r,c,len,dir,colors[(idx+mode)%colors.length],kind);
+  addVehicle('v'+idx,r,actualCol,len,dir,colors[(idx+mode)%colors.length],kind);
   for(const key of cells)placedCells.add(key);
   idx++;
  }
