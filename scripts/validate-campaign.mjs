@@ -17,15 +17,18 @@ function createLevel(levelIndex) {
   const difficulty = levelIndex % 10 + 1;
   const vehicles = [
     {id:'goal',row:2,col:0,len:2,dir:'h',goal:true},
-    {id:'queueTop',row:0,col:2,len:2,dir:'h',goal:false}
+    {id:'queueTop',row:0,col:queueCol,len:2,dir:'h',goal:false}
   ];
   const occupied = new Set(vehicles.flatMap(v => cells(v).map(key)));
   let idx = 0;
-  const template = templates[Math.min(3, Math.floor((difficulty - 1) / 3))];
+  const template = templates[levelIndex % templates.length];
+  const mirrorTemplate = Math.floor(levelIndex / templates.length) % 2 === 1;
+  const queueCol = (levelIndex % 3) * 2;
   for (const [row,col,len,dir] of template) {
     if (idx > 5) break;
-    if (row < 0 || col < 0 || row + (dir === 'v' ? len - 1 : 0) > 5 || col + (dir === 'h' ? len - 1 : 0) > 5) continue;
-    const vehicle = {id:'v'+idx,row,col,len,dir,goal:false};
+    const actualCol = mirrorTemplate ? (dir === 'v' ? 5-col : 6-col-len) : col;
+    if (row < 0 || actualCol < 0 || row + (dir === 'v' ? len - 1 : 0) > 5 || actualCol + (dir === 'h' ? len - 1 : 0) > 5) continue;
+    const vehicle = {id:'v'+idx,row,col:actualCol,len,dir,goal:false};
     const occupiedCells = cells(vehicle).map(key);
     if (occupiedCells.some(cell => occupied.has(cell))) continue;
     vehicles.push(vehicle);
@@ -73,11 +76,14 @@ function solve(vehicles) {
 }
 
 const failures = [];
+const layouts = new Set();
 for (let level = 0; level < 30; level++) {
   const vehicles = createLevel(level);
+  layouts.add(vehicles.map(v => [v.id,v.row,v.col,v.len,v.dir].join(':')).join('|'));
   const moves = solve(vehicles);
   if (moves === null) failures.push('Level ' + (level + 1) + ' is not solvable');
 }
+if (layouts.size < 20) failures.push('Campaign has only ' + layouts.size + ' distinct layouts; expected at least 20.');
 if (failures.length) {
   console.error(failures.join('\n'));
   process.exitCode = 1;
