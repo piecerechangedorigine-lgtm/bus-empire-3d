@@ -136,6 +136,14 @@ function resetBoard(){
  let idx=0;
  const placedCells=new Set();
  for(const v of vehicles){const d=v.userData;for(let k=0;k<d.len;k++)placedCells.add((d.row+(d.dir==='v'?k:0))+','+(d.col+(d.dir==='h'?k:0)))}
+ // Two horizontal traffic queues protect the central blocker, so early stages teach the player to clear a lane before moving the red car.
+ const addHorizontalQueue=(id,row,col,len,color)=>{
+  const cells=[];for(let k=0;k<len;k++)cells.push(row+','+(col+k));
+  if(cells.some(key=>placedCells.has(key)))return false;
+  addVehicle(id,row,col,len,'h',color,'car');for(const key of cells)placedCells.add(key);return true;
+ };
+ addHorizontalQueue('queueTop',0,2,2,M.yellow);
+ addHorizontalQueue('queueBottom',3,2,2,M.purple);
  for(const [r,c,len,dir] of template){
   if(idx>difficulty+1)break;
   if(r<0||c<0||r+(dir==='v'?len-1:0)>5||c+(dir==='h'?len-1:0)>5)continue;
