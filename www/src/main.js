@@ -249,7 +249,7 @@ $('#modalBody').addEventListener('click',e=>{
  if(b.id==='toggleSound'){settings.sound=!settings.sound;saveSettings();openModal('الإعدادات','خصّص تجربة اللعب. تُحفظ اختياراتك على هذا الجهاز.','<div class="levelrow"><span>🔊 المؤثرات الصوتية<small>أصوات بسيطة للحركة والخطأ والفوز</small></span><button id="toggleSound" class="'+(settings.sound?'primary':'')+'">'+(settings.sound?'مفعّل':'متوقف')+'</button></div><div class="levelrow"><span>📳 الاهتزاز<small>اهتزاز خفيف عند الحركة والتنبيه (إن كان مدعومًا)</small></span><button id="toggleVibration" class="'+(settings.vibration?'primary':'')+'">'+(settings.vibration?'مفعّل':'متوقف')+'</button></div><div class="levelrow"><span>💾 حفظ التقدم<small>المراحل والعملات والنجوم تُحفظ محليًا تلقائيًا</small></span><button disabled>تلقائي</button></div><button id="resume" class="primary" style="width:100%;margin-top:12px">حفظ والعودة</button>');return}
  if(b.id==='toggleVibration'){settings.vibration=!settings.vibration;saveSettings();openModal('الإعدادات','خصّص تجربة اللعب. تُحفظ اختياراتك على هذا الجهاز.','<div class="levelrow"><span>🔊 المؤثرات الصوتية<small>أصوات بسيطة للحركة والخطأ والفوز</small></span><button id="toggleSound" class="'+(settings.sound?'primary':'')+'">'+(settings.sound?'مفعّل':'متوقف')+'</button></div><div class="levelrow"><span>📳 الاهتزاز<small>اهتزاز خفيف عند الحركة والتنبيه (إن كان مدعومًا)</small></span><button id="toggleVibration" class="'+(settings.vibration?'primary':'')+'">'+(settings.vibration?'مفعّل':'متوقف')+'</button></div><div class="levelrow"><span>💾 حفظ التقدم<small>المراحل والعملات والنجوم تُحفظ محليًا تلقائيًا</small></span><button disabled>تلقائي</button></div><button id="resume" class="primary" style="width:100%;margin-top:12px">حفظ والعودة</button>');return}
  if(b.id==='buyHint'){
-  if(!spendCoins(15))return;
+  if(coins<15){toast('تحتاج إلى 15 عملة لشراء التلميح.');return;}
   closeModal();
   const blockers=vehicles.filter(v=>{
    const d=v.userData;if(d.goal)return false;
@@ -286,8 +286,8 @@ $('#modalBody').addEventListener('click',e=>{
     break;
    }
   }
-  if(choice){selected=choice;drawSelection();const dir=choice.userData.dir==='v'?(delta<0?'للأعلى':'للأسفل'):(delta<0?'لليسار':'لليمين');toast('حرّك المركبة المحددة '+Math.abs(delta)+' خانة '+dir+' لإخلاء الممر.')}
-  else toast('لا توجد حركة مباشرة تفتح الممر؛ حرّك المركبات المجاورة أولًا.');
+  if(choice){if(!spendCoins(15))return;selected=choice;drawSelection();const dir=choice.userData.dir==='v'?(delta<0?'للأعلى':'للأسفل'):(delta<0?'لليسار':'لليمين');toast('حرّك المركبة المحددة '+Math.abs(delta)+' خانة '+dir+' لإخلاء الممر.')}
+  else toast('لم يُخصم شيء: لا توجد حركة مباشرة للتلميح، حرّك مركبة أخرى أولًا.');
   return;
  }
  if(b.id==='buySkip'){if(!spendCoins(100))return;closeModal();if(levelIndex<totalLevels-1){levelIndex++;resetBoard();toast('تم تجاوز المرحلة مقابل 100 عملة.')}else{won=true;updateHUD();openModal('🏆 انتهت الحملة','أكملت جميع المراحل في هذه النسخة.','<button id="replay" class="primary">العب من البداية</button>')}return}
