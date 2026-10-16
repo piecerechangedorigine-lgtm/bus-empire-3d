@@ -51,7 +51,7 @@ const modes=[
  {name:'Cargo Sort',ar:'Cargo Sort',desc:'Move cargo trucks to open the delivery lane.',icon:'📦'},
  {name:'City Rescue',ar:'City Rescue',desc:'Clear the road for the rescue vehicle.',icon:'🚒'},
  {name:'Train & Bus Connect',ar:'Transit Link',desc:'Clear the lanes to reach the exit.',icon:'🚆'},
- {name:'Park & Flow',ar:'Traffic Jam',desc:'أخلِ الساحة بأقل عدد من الحركات.',icon:'🅿️'}
+ {name:'Park & Flow',ar:'Traffic Jam',desc:'Clear the board in as few moves as possible.',icon:'🅿️'}
 ];
 const totalLevels=30;
 const levelName=i=>modes[0];
