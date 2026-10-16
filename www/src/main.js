@@ -175,7 +175,7 @@ function resetBoard(){
  updateHUD();drawSelection();save();
 }
 function spendCoins(amount){if(coins<amount){toast('Not enough coins. Complete more levels to earn coins.');return false}coins-=amount;save();updateHUD();return true}
-function showStore(){openModal('🪙 Traffic Command Store','The game is free. Earn coins by playing and spend them on hints or skipping a difficult level. Real-money purchases are not enabled in this build.', '<div class="levelrow"><span>🧭 One hint<small>Helps you choose the right vehicle</small></span><button id="buyHint" class="gold">15 🪙</button></div><div class="levelrow"><span>⏭️ Skip level<small>Skip level الحالية مقابل عملات اللعبة</small></span><button id="buySkip" class="gold">100 🪙</button></div><div class="levelrow"><span>💳 Real-money coin purchases<small>Not available in this build</small></span><button disabled>Coming soon</button></div>');}
+function showStore(){openModal('🪙 Traffic Command Store','The game is free. Earn coins by playing and spend them on hints or skipping a difficult level. Real-money purchases are not enabled in this build.', '<div class="levelrow"><span>🧭 One hint<small>Helps you choose the right vehicle</small></span><button id="buyHint" class="gold">15 🪙</button></div><div class="levelrow"><span>⏭️ Skip level<small>Skip the current level using in-game coins</small></span><button id="buySkip" class="gold">100 🪙</button></div><div class="levelrow"><span>💳 Real-money coin purchases<small>Not available in this build</small></span><button disabled>Coming soon</button></div>');}
 function updateHUD(){
  const mode=levelName(levelIndex),difficulty=levelIndex%10+1;
  $('#coins').textContent=coins;$('#level').textContent=(levelIndex+1)+' / '+totalLevels;
@@ -184,7 +184,7 @@ function updateHUD(){
  $('#mission').textContent='🚦 '+mode.ar+' · Level '+(levelIndex+1);
  $('#description').textContent=mode.desc;
  $('#next').disabled=!won;$('#hint').style.display=(won||moves>0)?'none':'block';
- $('#hint').textContent='حرّك المركبات التي تسدّ الصف الأوسط، ثم اسحب المركبة الحمراء إلى المخرج الأخضر.';
+ $('#hint').textContent='Move blocking vehicles to clear the middle lane, then drag the red vehicle to the green exit.';
 }
 function drawSelection(){for(const v of vehicles){v.scale.setScalar(v===selected?1.055:1);}}
 function occupiedCells(ignore=null){
@@ -222,7 +222,7 @@ function finishLevel(){
  if(firstClear){completedLevels.push(levelIndex);stars+=earned;coins+=20+earned*10;}
  save();updateHUD();
  $('#next').disabled=false;$('#mission').textContent='🎉 Great job! The exit is clear';
- $('#description').textContent=firstClear?'+'+(20+earned*10)+' coins · '+earned+' stars. أكمل الحملة!':'أعدت إكمال هذه المرحلة؛ المكافأة تُمنح مرة واحدة فقط.';
+ $('#description').textContent=firstClear?'+'+(20+earned*10)+' coins · '+earned+' stars. Keep going!':'You replayed this level. Rewards are only granted once.';
  $('#hint').style.display='block';$('#hint').textContent='Level complete! Continue to the next challenge.';
  toast(firstClear?'Solved! +'+(20+earned*10)+' coins · '+earned+' stars':'Level replayed; no duplicate reward.');
 }
@@ -272,7 +272,7 @@ $('#modalBody').addEventListener('click',e=>{
  if(b.id==='toggleSound'){settings.sound=!settings.sound;saveSettings();openModal('Settings','Customize your game. Your settings are saved on this device.','<div class="levelrow"><span>🔊 Sound effects<small>Simple sounds for moves, errors, and wins</small></span><button id="toggleSound" class="'+(settings.sound?'primary':'')+'">'+(settings.sound?'On':'Off')+'</button></div><div class="levelrow"><span>📳 Vibration<small>Light vibration for moves and alerts (if supported)</small></span><button id="toggleVibration" class="'+(settings.vibration?'primary':'')+'">'+(settings.vibration?'On':'Off')+'</button></div><div class="levelrow"><span>💾 Save progress<small>Levels, coins, and stars save automatically on this device</small></span><button disabled>Automatic</button></div><button id="resume" class="primary" style="width:100%;margin-top:12px">Save & return</button>');return}
  if(b.id==='toggleVibration'){settings.vibration=!settings.vibration;saveSettings();openModal('Settings','Customize your game. Your settings are saved on this device.','<div class="levelrow"><span>🔊 Sound effects<small>Simple sounds for moves, errors, and wins</small></span><button id="toggleSound" class="'+(settings.sound?'primary':'')+'">'+(settings.sound?'On':'Off')+'</button></div><div class="levelrow"><span>📳 Vibration<small>Light vibration for moves and alerts (if supported)</small></span><button id="toggleVibration" class="'+(settings.vibration?'primary':'')+'">'+(settings.vibration?'On':'Off')+'</button></div><div class="levelrow"><span>💾 Save progress<small>Levels, coins, and stars save automatically on this device</small></span><button disabled>Automatic</button></div><button id="resume" class="primary" style="width:100%;margin-top:12px">Save & return</button>');return}
  if(b.id==='buyHint'){
-  if(coins<15){toast('تحتاج إلى 15 عملة لشراء التلميح.');return;}
+  if(coins<15){toast('You need 15 coins to buy a hint.');return;}
   closeModal();
   const findHintMove=()=>{
    const meta=vehicles.map(v=>({id:v.userData.id,row:v.userData.row,col:v.userData.col,len:v.userData.len,dir:v.userData.dir,goal:v.userData.goal}));
@@ -304,7 +304,7 @@ $('#modalBody').addEventListener('click',e=>{
   const hint=findHintMove();
   if(hint){
    const choice=vehicles.find(v=>v.userData.id===hint.id);
-   if(!choice){toast('تعذّر تحديد الحركة المناسبة.');return;}
+   if(!choice){toast('Could not identify the suggested move.');return;}
    if(!spendCoins(15))return;
    selected=choice;drawSelection();
    const dir=choice.userData.dir==='v'?(hint.delta<0?'up':'down'):(hint.delta<0?'left':'right');
@@ -313,7 +313,7 @@ $('#modalBody').addEventListener('click',e=>{
 
   return;
  }
- if(b.id==='buySkip'){if(!spendCoins(100))return;closeModal();if(levelIndex<totalLevels-1){levelIndex++;resetBoard();toast('تم Skip level مقابل 100 عملة.')}else{won=true;updateHUD();openModal('🏆 Campaign complete','أكملت جميع المراحل في هذه النسخة.','<button id="replay" class="primary">Play again</button>')}return}
+ if(b.id==='buySkip'){if(!spendCoins(100))return;closeModal();if(levelIndex<totalLevels-1){levelIndex++;resetBoard();toast('تم Skip level مقابل 100 عملة.')}else{won=true;updateHUD();openModal('🏆 Campaign complete','You completed all levels in this build.','<button id="replay" class="primary">Play again</button>')}return}
  if(b.id==='replay'){levelIndex=0;resetBoard();closeModal();return}
  if(b.id==='settings'){openModal('Settings','Customize your game. Your settings are saved on this device.','<div class="levelrow"><span>🔊 Sound effects<small>Simple sounds for moves, errors, and wins</small></span><button id="toggleSound" class="'+(settings.sound?'primary':'')+'">'+(settings.sound?'On':'Off')+'</button></div><div class="levelrow"><span>📳 Vibration<small>Light vibration for moves and alerts (if supported)</small></span><button id="toggleVibration" class="'+(settings.vibration?'primary':'')+'">'+(settings.vibration?'On':'Off')+'</button></div><div class="levelrow"><span>💾 Save progress<small>Levels, coins, and stars save automatically on this device</small></span><button disabled>Automatic</button></div><button id="resume" class="primary" style="width:100%;margin-top:12px">Save & return</button>');return}
  if(b.id==='levels'){
