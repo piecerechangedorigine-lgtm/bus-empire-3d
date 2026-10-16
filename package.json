@@ -7,7 +7,8 @@
     "start": "vite --host 0.0.0.0",
     "build": "vite build",
     "android:add": "cap add android",
-    "android:sync": "cap sync android"
+    "android:sync": "cap sync android",
+    "test:campaign": "node scripts/validate-campaign.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^6.2.0",
