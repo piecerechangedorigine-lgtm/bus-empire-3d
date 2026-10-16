@@ -305,7 +305,7 @@ $('#modalBody').addEventListener('click',e=>{
   html+='</div><div class="muted" style="margin-top:10px">الأخضر: مكتملة · الفاتح: المرحلة الحالية · المراحل الرمادية مقفلة حتى تتقدم.</div>';
   openModal('خريطة الحملة','اختر أي مرحلة سبق أن فتحتها.',html);return;
  }
- if(b.dataset.level){const n=Number(b.dataset.level);if(n<=levelIndex){levelIndex=n;resetBoard();closeModal()}return}
+ if(b.dataset.level){const n=Number(b.dataset.level);if(n<=levelIndex||completedLevels.includes(n)){levelIndex=n;resetBoard();closeModal()}return}
 });
 function resize(){renderer.setSize(innerWidth,innerHeight);const aspect=innerWidth/innerHeight;const viewWidth=8.2;camera.left=-viewWidth/2;camera.right=viewWidth/2;camera.top=viewWidth/aspect/2;camera.bottom=-viewWidth/aspect/2;camera.updateProjectionMatrix();}
 window.addEventListener('resize',resize);resize();
