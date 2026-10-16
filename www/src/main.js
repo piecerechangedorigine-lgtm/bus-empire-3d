@@ -39,6 +39,7 @@ const board = group(scene);
 const decor = group(scene);
 let objects=[], vehicles=[], selected=null, levelIndex=0, moves=0, coins=120, stars=0, completedLevels=[], won=false, savedMoves=[], levelState=null, toastTimer;
 let settings={sound:true,vibration:true};
+let restoredBoardState=null;
 try{const prefs=JSON.parse(localStorage.getItem('trafficPuzzleSettings')||'null');if(prefs)settings={sound:prefs.sound!==false,vibration:prefs.vibration!==false}}catch{}
 function saveSettings(){try{localStorage.setItem('trafficPuzzleSettings',JSON.stringify(settings))}catch{}}
 function feedback(kind='tap'){if(settings.vibration&&typeof navigator!=='undefined'&&navigator.vibrate)navigator.vibrate(kind==='win'?[35,45,70]:kind==='error'?35:12);if(!settings.sound)return;try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return;const ctx=new C(),osc=ctx.createOscillator(),gain=ctx.createGain();osc.type='sine';osc.frequency.value=kind==='win'?740:kind==='error'?180:440;gain.gain.setValueAtTime(.045,ctx.currentTime);gain.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.09);osc.connect(gain);gain.connect(ctx.destination);osc.start();osc.stop(ctx.currentTime+.1);osc.onended=()=>ctx.close()}catch{}}
@@ -55,8 +56,8 @@ const modes=[
 const totalLevels=30;
 const levelName=i=>modes[0];
 function toast(s){const el=$('#toast');el.textContent=s;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),1900);}
-function save(){try{localStorage.setItem('trafficPuzzleWorld',JSON.stringify({levelIndex,coins,stars,completedLevels}))}catch{}}
-try{const data=JSON.parse(localStorage.getItem('trafficPuzzleWorld')||'null');if(data){levelIndex=Math.max(0,Math.min(totalLevels-1,Number(data.levelIndex)||0));coins=Math.max(0,Number(data.coins)||0);stars=Math.max(0,Number(data.stars)||0);completedLevels=Array.isArray(data.completedLevels)?data.completedLevels.filter(n=>Number.isInteger(n)&&n>=0&&n<totalLevels):[]}}catch{}
+function save(){try{localStorage.setItem('trafficPuzzleWorld',JSON.stringify({levelIndex,coins,stars,completedLevels,boardState:{levelIndex,moves,won,positions:vehicles.map(v=>({id:v.userData.id,row:v.userData.row,col:v.userData.col})),savedMoves}}))}catch{}}
+try{const data=JSON.parse(localStorage.getItem('trafficPuzzleWorld')||'null');if(data){levelIndex=Math.max(0,Math.min(totalLevels-1,Number(data.levelIndex)||0));coins=Math.max(0,Number(data.coins)||0);stars=Math.max(0,Number(data.stars)||0);completedLevels=Array.isArray(data.completedLevels)?data.completedLevels.filter(n=>Number.isInteger(n)&&n>=0&&n<totalLevels):[];restoredBoardState=data.boardState&&data.boardState.levelIndex===levelIndex?data.boardState:null}}catch{}
 function clearGroup(g){while(g.children.length)g.remove(g.children[g.children.length-1]);}
 function resetBoard(){
  clearGroup(board);clearGroup(decor);objects=[];vehicles=[];selected=null;moves=0;won=false;savedMoves=[];
@@ -162,6 +163,11 @@ function resetBoard(){
  // Cargo / terminal scenery makes the mode legible without leaving the campaign.
  if(mode===3){for(let c=-2;c<=2;c+=2)cube(decor,c,.02,3.55,.62,.16,.62,M.wood,false)}
  if(mode===5){for(let c=-2;c<=2;c++)cube(decor,c,.02,3.58,.08,.1,.7,M.rail,false)}
+ // Restore the in-progress board after app restarts, only when it belongs to this level.
+ if(restoredBoardState&&restoredBoardState.levelIndex===levelIndex){
+  for(const p of restoredBoardState.positions||[]){const v=vehicles.find(x=>x.userData.id===p.id);if(!v)continue;v.userData.row=p.row;v.userData.col=p.col;v.position.x=p.col-2.5+(v.userData.dir==='h'?(v.userData.len-1)/2:0);v.position.z=p.row-2.5+(v.userData.dir==='v'?(v.userData.len-1)/2:0)}
+  moves=Math.max(0,Number(restoredBoardState.moves)||0);won=Boolean(restoredBoardState.won);savedMoves=Array.isArray(restoredBoardState.savedMoves)?restoredBoardState.savedMoves:[];restoredBoardState=null;
+ }
  // Make the target and pieces sit on the cell centers, with their row/col as source of truth.
  updateHUD();drawSelection();save();
 }
@@ -204,7 +210,7 @@ function moveVehicle(v,delta){
  savedMoves.push({id:d.id,row:d.row,col:d.col});
  if(d.dir==='v')d.row+=steps;else d.col+=steps;
  v.position.x=d.col-2.5+(d.dir==='h'?(d.len-1)/2:0);v.position.z=d.row-2.5+(d.dir==='v'?(d.len-1)/2:0);moves++;selected=v;feedback('tap');drawSelection();updateHUD();
- if(d.goal&&d.col+d.len>5)finishLevel();
+ if(d.goal&&d.col+d.len>5)finishLevel();else save();
 }
 function finishLevel(){
  won=true;
@@ -235,7 +241,7 @@ canvas.addEventListener('pointerup',e=>{
  }
  pointerStart=null;
 });
-$('#undo').onclick=()=>{if(won||!savedMoves.length){toast('لا توجد حركة للتراجع عنها.');return}const last=savedMoves.pop(),v=vehicles.find(x=>x.userData.id===last.id);if(v){v.userData.row=last.row;v.userData.col=last.col;v.position.x=last.col-2.5+(v.userData.dir==='h'?(v.userData.len-1)/2:0);v.position.z=last.row-2.5+(v.userData.dir==='v'?(v.userData.len-1)/2:0);moves=Math.max(0,moves-1);selected=v;drawSelection();updateHUD()}};
+$('#undo').onclick=()=>{if(won||!savedMoves.length){toast('لا توجد حركة للتراجع عنها.');return}const last=savedMoves.pop(),v=vehicles.find(x=>x.userData.id===last.id);if(v){v.userData.row=last.row;v.userData.col=last.col;v.position.x=last.col-2.5+(v.userData.dir==='h'?(v.userData.len-1)/2:0);v.position.z=last.row-2.5+(v.userData.dir==='v'?(v.userData.len-1)/2:0);moves=Math.max(0,moves-1);selected=v;drawSelection();updateHUD();save()}};
 $('#restart').onclick=()=>{resetBoard();toast('أُعيد ترتيب المرحلة.');};
 $('#next').onclick=()=>{if(!won)return;if(levelIndex<totalLevels-1)levelIndex++;else{openModal('🏆 أكملت Traffic Command!','أكملت جميع المراحل المتاحة في هذه النسخة.','<button id="replay" class="primary">العب من البداية</button>');return}resetBoard();toast('المرحلة التالية!');};
 $('#store').onclick=showStore;
