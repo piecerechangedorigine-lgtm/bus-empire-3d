@@ -272,9 +272,9 @@ $('#modalBody').addEventListener('click',e=>{
       for(let distance=1;distance<=6;distance++){
        const delta=sign*distance,next={row:p.row+(v.dir==='v'?delta:0),col:p.col+(v.dir==='h'?delta:0)};
        if(next.row<0||next.row+(v.dir==='v'?v.len-1:0)>5||next.col<0||(!v.goal&&next.col+(v.dir==='h'?v.len-1:0)>5))break;
-       if(v.goal&&next.col+v.len>5)return node.first||{id:v.id,delta};
        const keys=cellKeys(v,next);
        if(keys.some(k=>others.has(k)))break;
+       if(v.goal&&next.col+v.len>5)return node.first||{id:v.id,delta};
        const state=node.state.map(q=>({...q}));state[i]=next;
        const sig=keyState(state);if(seen.has(sig))continue;seen.add(sig);
        queue.push({state,first:node.first||{id:v.id,delta}});
