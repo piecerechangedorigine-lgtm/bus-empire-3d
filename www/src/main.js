@@ -257,43 +257,43 @@ $('#modalBody').addEventListener('click',e=>{
  if(b.id==='buyHint'){
   if(coins<15){toast('تحتاج إلى 15 عملة لشراء التلميح.');return;}
   closeModal();
-  const blockers=vehicles.filter(v=>{
-   const d=v.userData;if(d.goal)return false;
-   for(let k=0;k<d.len;k++){const r=d.row+(d.dir==='v'?k:0),c=d.col+(d.dir==='h'?k:0);if(r===2&&c>=2&&c<=5)return true}
-   return false;
-  });
-  let choice=null,delta=0;
-  // Prefer a legal move that removes the blocking vehicle from the target row completely.
-  for(const v of blockers){
-   const d=v.userData;
-   for(const step of [-1,1]){
-    let farthest=0;
-    for(let distance=1;distance<=6;distance++){
-     const candidate=step*distance;
-     if(!canMove(v,candidate))break;
-     farthest=candidate;
-     const rowStart=d.row+(d.dir==='v'?candidate:0);
-     const rowEnd=rowStart+(d.dir==='v'?d.len-1:0);
-     if(d.dir==='v'&&(2<rowStart||2>rowEnd)){choice=v;delta=candidate;break}
-    }
-    if(choice)break;
-    // If no single move clears the row, still suggest the furthest legal step in a useful direction.
-    if(farthest&&!choice){choice=v;delta=farthest}
-   }
-   if(choice){
-    const d2=choice.userData;
-    if(d2.dir==='v'){
-     const newRow=d2.row+delta;
-     if(newRow<=2&&newRow+d2.len-1>=2){
-      const other=delta<0?-1:1;
-      for(let distance=1;distance<=6;distance++){if(!canMove(choice,other*distance))break;delta=other*distance;const rr=d2.row+delta;if(rr>2||rr+d2.len-1<2)break}
+  const findHintMove=()=>{
+   const meta=vehicles.map(v=>({id:v.userData.id,row:v.userData.row,col:v.userData.col,len:v.userData.len,dir:v.userData.dir,goal:v.userData.goal}));
+   const keyState=state=>state.map(p=>p.row+','+p.col).join('|');
+   const initial=meta.map(v=>({row:v.row,col:v.col}));
+   const queue=[{state:initial,first:null}],seen=new Set([keyState(initial)]);
+   const cellKeys=(v,p)=>Array.from({length:v.len},(_,k)=>(p.row+(v.dir==='v'?k:0))+','+(p.col+(v.dir==='h'?k:0)));
+   for(let head=0;head<queue.length;head++){
+    const node=queue[head],occupied=new Set();
+    node.state.forEach((p,i)=>cellKeys(meta[i],p).forEach(k=>occupied.add(k)));
+    for(let i=0;i<meta.length;i++){
+     const v=meta[i],p=node.state[i],own=new Set(cellKeys(v,p)),others=new Set([...occupied].filter(k=>!own.has(k)));
+     for(const sign of [-1,1]){
+      for(let distance=1;distance<=6;distance++){
+       const delta=sign*distance,next={row:p.row+(v.dir==='v'?delta:0),col:p.col+(v.dir==='h'?delta:0)};
+       if(next.row<0||next.row+(v.dir==='v'?v.len-1:0)>5||next.col<0||(!v.goal&&next.col+(v.dir==='h'?v.len-1:0)>5))break;
+       if(v.goal&&next.col+v.len>5)return node.first||{id:v.id,delta};
+       const keys=cellKeys(v,next);
+       if(keys.some(k=>others.has(k)))break;
+       const state=node.state.map(q=>({...q}));state[i]=next;
+       const sig=keyState(state);if(seen.has(sig))continue;seen.add(sig);
+       queue.push({state,first:node.first||{id:v.id,delta}});
+      }
      }
     }
-    break;
    }
-  }
-  if(choice){if(!spendCoins(15))return;selected=choice;drawSelection();const dir=choice.userData.dir==='v'?(delta<0?'للأعلى':'للأسفل'):(delta<0?'لليسار':'لليمين');toast('حرّك المركبة المحددة '+Math.abs(delta)+' خانة '+dir+' لإخلاء الممر.')}
-  else toast('لم يُخصم شيء: لا توجد حركة مباشرة للتلميح، حرّك مركبة أخرى أولًا.');
+   return null;
+  };
+  const hint=findHintMove();
+  if(hint){
+   const choice=vehicles.find(v=>v.userData.id===hint.id);
+   if(!choice){toast('تعذّر تحديد الحركة المناسبة.');return;}
+   if(!spendCoins(15))return;
+   selected=choice;drawSelection();
+   const dir=choice.userData.dir==='v'?(hint.delta<0?'للأعلى':'للأسفل'):(hint.delta<0?'لليسار':'لليمين');
+   toast('التلميح: حرّك المركبة المحددة '+Math.abs(hint.delta)+' خانة '+dir+'.');
+  }else toast('لم أجد حلًا آليًا لهذه الوضعية؛ أعد المرحلة دون خصم عملات.');
+
   return;
  }
  if(b.id==='buySkip'){if(!spendCoins(100))return;closeModal();if(levelIndex<totalLevels-1){levelIndex++;resetBoard();toast('تم تجاوز المرحلة مقابل 100 عملة.')}else{won=true;updateHUD();openModal('🏆 انتهت الحملة','أكملت جميع المراحل في هذه النسخة.','<button id="replay" class="primary">العب من البداية</button>')}return}
