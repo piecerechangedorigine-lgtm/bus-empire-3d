@@ -221,7 +221,7 @@ function finishLevel(){
  const firstClear=!completedLevels.includes(levelIndex);
  if(firstClear){completedLevels.push(levelIndex);stars+=earned;coins+=20+earned*10;}
  save();updateHUD();
- $('#next').disabled=false;$('#mission').textContent='🎉 Great job! The exit is clear';
+ $('#next').disabled=false;$('#mission').textContent='🎉 LEVEL COMPLETE';
  $('#description').textContent=firstClear?'+'+(20+earned*10)+' coins · '+earned+' stars. Keep going!':'You replayed this level. Rewards are only granted once.';
  $('#hint').style.display='block';$('#hint').textContent='Level complete! Continue to the next challenge.';
  toast(firstClear?'Solved! +'+(20+earned*10)+' coins · '+earned+' stars':'Level replayed; no duplicate reward.');
@@ -244,12 +244,14 @@ canvas.addEventListener('pointerup',e=>{
  if(!pointerStart)return;
  const start=pointerStart;pointerStart=null;
  const dx=e.clientX-start.x,dy=e.clientY-start.y;
- if(start.v&&(Math.abs(dx)+Math.abs(dy)>8)){
+ if(start.v&&(Math.max(Math.abs(dx),Math.abs(dy))>10)){
   const v=start.v,dir=v.userData.dir;
   const cellPixels=innerWidth/8.2;
   const val=dir==='h'?dx:dy;
+  const cross=dir==='h'?dy:dx;
+  if(Math.abs(cross)>Math.abs(val)*1.25){feedback('error');toast('Drag along the vehicle lane.');return;}
   let delta=Math.round(val/cellPixels);
-  if(!delta&&Math.abs(val)>8)delta=Math.sign(val);
+  if(!delta&&Math.abs(val)>10)delta=Math.sign(val);
   moveVehicle(v,delta);
  }else if(!start.v){
   const hits=raycast(e).intersectObjects(vehicles,true);
@@ -260,7 +262,7 @@ canvas.addEventListener('pointercancel',()=>{pointerStart=null;});
 canvas.addEventListener('lostpointercapture',()=>{pointerStart=null;});
 $('#undo').onclick=()=>{if(won||!savedMoves.length){toast('Nothing to undo.');return}const last=savedMoves.pop(),v=vehicles.find(x=>x.userData.id===last.id);if(v){v.userData.row=last.row;v.userData.col=last.col;v.position.x=last.col-2.5+(v.userData.dir==='h'?(v.userData.len-1)/2:0);v.position.z=last.row-2.5+(v.userData.dir==='v'?(v.userData.len-1)/2:0);moves=Math.max(0,moves-1);selected=v;drawSelection();updateHUD();save()}};
 $('#restart').onclick=()=>{resetBoard();toast('Level restarted.');};
-$('#next').onclick=()=>{if(!won)return;if(levelIndex<totalLevels-1)levelIndex++;else{openModal('🏆 أكملت Traffic Command!','You completed all available levels in this build.','<button id="replay" class="primary">Play again</button>');return}resetBoard();toast('Next level!');};
+$('#next').onclick=()=>{if(!won)return;if(levelIndex<totalLevels-1)levelIndex++;else{openModal('🏆 CAMPAIGN COMPLETE','You completed all available levels in this build.','<button id="replay" class="primary">Play again</button>');return}resetBoard();toast('Next level!');};
 $('#store').onclick=showStore;
 $('#pause').onclick=()=>openModal('Game paused','Your progress is saved automatically on this device.','<button id="resume" class="primary">Resume</button><button id="levels">Campaign map</button><button id="settings">Settings</button>');
 function openModal(title,text,html=''){ $('#modalTitle').textContent=title;$('#modalText').textContent=text;$('#modalBody').innerHTML=html;$('#modal').classList.add('open');$('#shade').classList.add('open');}
@@ -313,7 +315,7 @@ $('#modalBody').addEventListener('click',e=>{
 
   return;
  }
- if(b.id==='buySkip'){if(!spendCoins(100))return;closeModal();if(levelIndex<totalLevels-1){levelIndex++;resetBoard();toast('تم Skip level مقابل 100 عملة.')}else{won=true;updateHUD();openModal('🏆 Campaign complete','You completed all levels in this build.','<button id="replay" class="primary">Play again</button>')}return}
+ if(b.id==='buySkip'){if(!spendCoins(100))return;closeModal();if(levelIndex<totalLevels-1){levelIndex++;resetBoard();toast('Level skipped for 100 coins.')}else{won=true;updateHUD();openModal('🏆 Campaign complete','You completed all levels in this build.','<button id="replay" class="primary">Play again</button>')}return}
  if(b.id==='replay'){levelIndex=0;resetBoard();closeModal();return}
  if(b.id==='settings'){openModal('Settings','Customize your game. Your settings are saved on this device.','<div class="levelrow"><span>🔊 Sound effects<small>Simple sounds for moves, errors, and wins</small></span><button id="toggleSound" class="'+(settings.sound?'primary':'')+'">'+(settings.sound?'On':'Off')+'</button></div><div class="levelrow"><span>📳 Vibration<small>Light vibration for moves and alerts (if supported)</small></span><button id="toggleVibration" class="'+(settings.vibration?'primary':'')+'">'+(settings.vibration?'On':'Off')+'</button></div><div class="levelrow"><span>💾 Save progress<small>Levels, coins, and stars save automatically on this device</small></span><button disabled>Automatic</button></div><button id="resume" class="primary" style="width:100%;margin-top:12px">Save & return</button>');return}
  if(b.id==='levels'){
