@@ -132,7 +132,7 @@ function resetBoard(){
   [[1,2,2,'v'],[1,4,2,'v'],[1,5,3,'v'],[3,0,2,'v'],[3,1,2,'v'],[3,3,2,'v'],[4,2,2,'v'],[4,4,2,'v'],[0,0,2,'v']]
  ];
  const template=templates[Math.min(3,Math.floor((difficulty-1)/3))];
- // Add only vertical blockers outside the goal row. Vary the blocking lane and theme.
+ // Keep each board within the validated blocker budget so the generated campaign layouts remain solvable.
  let idx=0;
  const placedCells=new Set();
  for(const v of vehicles){const d=v.userData;for(let k=0;k<d.len;k++)placedCells.add((d.row+(d.dir==='v'?k:0))+','+(d.col+(d.dir==='h'?k:0)))}
@@ -144,7 +144,7 @@ function resetBoard(){
  };
  addHorizontalQueue('queueTop',0,2,2,M.yellow);
  for(const [r,c,len,dir] of template){
-  if(idx>difficulty+1)break;
+  if(idx>5)break;
   if(r<0||c<0||r+(dir==='v'?len-1:0)>5||c+(dir==='h'?len-1:0)>5)continue;
   const cells=[];let collision=false;
   for(let k=0;k<len;k++){const key=(r+(dir==='v'?k:0))+','+(c+(dir==='h'?k:0));if(placedCells.has(key)){collision=true;break}cells.push(key)}
