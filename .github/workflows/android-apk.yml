@@ -4,14 +4,12 @@ on:
   workflow_dispatch:
   push:
     branches: [main, master, 'rebuild/continuous-puzzle-campaign']
-  pull_request:
-    branches: [main, master]
 
 permissions:
   contents: read
 
 concurrency:
-  group: traffic-command-android-${{ github.ref }}
+  group: traffic-command-android-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
 jobs:
