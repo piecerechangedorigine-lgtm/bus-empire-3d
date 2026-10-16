@@ -143,7 +143,6 @@ function resetBoard(){
   addVehicle(id,row,col,len,'h',color,'car');for(const key of cells)placedCells.add(key);return true;
  };
  addHorizontalQueue('queueTop',0,2,2,M.yellow);
- addHorizontalQueue('queueBottom',3,2,2,M.purple);
  for(const [r,c,len,dir] of template){
   if(idx>difficulty+1)break;
   if(r<0||c<0||r+(dir==='v'?len-1:0)>5||c+(dir==='h'?len-1:0)>5)continue;
