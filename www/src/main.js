@@ -37,7 +37,7 @@ function group(parent,x=0,y=0,z=0){const g=new THREE.Group();g.position.set(x,y,
 const floor = cube(scene,0,-.6,0,20,.5,24,M.grass,false);
 const board = group(scene);
 const decor = group(scene);
-let objects=[], vehicles=[], selected=null, levelIndex=0, moves=0, coins=120, stars=0, completedLevels=[], won=false, savedMoves=[], levelState=null, toastTimer;
+let objects=[], vehicles=[], selected=null, levelIndex=0, moves=0, coins=120, stars=0, completedLevels=[], won=false, savedMoves=[], levelState=null, toastTimer;\nlet settings={sound:true,vibration:true};\ntry{const prefs=JSON.parse(localStorage.getItem('trafficPuzzleSettings')||'null');if(prefs)settings={sound:prefs.sound!==false,vibration:prefs.vibration!==false}}catch{}\nfunction saveSettings(){try{localStorage.setItem('trafficPuzzleSettings',JSON.stringify(settings))}catch{}}\nfunction feedback(kind='tap'){if(settings.vibration&&typeof navigator!=='undefined'&&navigator.vibrate)navigator.vibrate(kind==='win'?[35,45,70]:kind==='error'?35:12);if(!settings.sound)return;try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return;const ctx=new C(),osc=ctx.createOscillator(),gain=ctx.createGain();osc.type='sine';osc.frequency.value=kind==='win'?740:kind==='error'?180:440;gain.gain.setValueAtTime(.045,ctx.currentTime);gain.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.09);osc.connect(gain);gain.connect(ctx.destination);osc.start();osc.stop(ctx.currentTime+.1);osc.onended=()=>ctx.close()}catch{}}
 const colors=[M.blue,M.yellow,M.purple,M.orange,M.teal,M.red];
 const modes=[
  {name:'Traffic Command',ar:'التحكم في المرور',desc:'افتح مسار العبور بتحريك المركبات بالترتيب الصحيح.',icon:'🚦'},
@@ -189,10 +189,10 @@ function canMove(v,delta){
 function moveVehicle(v,delta){
  if(!v||won)return;
  const d=v.userData,steps=Math.round(delta);
- if(!steps||!canMove(v,steps)){toast('هذا المسار مغلق. جرّب اتجاهًا آخر.');return}
+ if(!steps||!canMove(v,steps)){feedback('error');toast('هذا المسار مغلق. جرّب اتجاهًا آخر.');return}
  savedMoves.push({id:d.id,row:d.row,col:d.col});
  if(d.dir==='v')d.row+=steps;else d.col+=steps;
- v.position.x=d.col-2.5+(d.dir==='h'?(d.len-1)/2:0);v.position.z=d.row-2.5+(d.dir==='v'?(d.len-1)/2:0);moves++;selected=v;drawSelection();updateHUD();
+ v.position.x=d.col-2.5+(d.dir==='h'?(d.len-1)/2:0);v.position.z=d.row-2.5+(d.dir==='v'?(d.len-1)/2:0);moves++;selected=v;feedback('tap');drawSelection();updateHUD();
  if(d.goal&&d.col+d.len>5)finishLevel();
 }
 function finishLevel(){
@@ -234,7 +234,7 @@ function closeModal(){$('#modal').classList.remove('open');$('#shade').classList
 $('#close').onclick=closeModal;$('#shade').onclick=closeModal;
 $('#modalBody').addEventListener('click',e=>{
  const b=e.target.closest('button');if(!b)return;
- if(b.id==='resume'){closeModal();return}
+ if(b.id==='resume'){saveSettings();closeModal();return}\n if(b.id==='toggleSound'){settings.sound=!settings.sound;saveSettings();openModal('الإعدادات','خصّص تجربة اللعب. تُحفظ اختياراتك على هذا الجهاز.','<div class="levelrow"><span>🔊 المؤثرات الصوتية<small>أصوات بسيطة للحركة والخطأ والفوز</small></span><button id="toggleSound" class="'+(settings.sound?'primary':'')+'">'+(settings.sound?'مفعّل':'متوقف')+'</button></div><div class="levelrow"><span>📳 الاهتزاز<small>اهتزاز خفيف عند الحركة والتنبيه (إن كان مدعومًا)</small></span><button id="toggleVibration" class="'+(settings.vibration?'primary':'')+'">'+(settings.vibration?'مفعّل':'متوقف')+'</button></div><div class="levelrow"><span>💾 حفظ التقدم<small>المراحل والعملات والنجوم تُحفظ محليًا تلقائيًا</small></span><button disabled>تلقائي</button></div><button id="resume" class="primary" style="width:100%;margin-top:12px">حفظ والعودة</button>');return}\n if(b.id==='toggleVibration'){settings.vibration=!settings.vibration;saveSettings();openModal('الإعدادات','خصّص تجربة اللعب. تُحفظ اختياراتك على هذا الجهاز.','<div class="levelrow"><span>🔊 المؤثرات الصوتية<small>أصوات بسيطة للحركة والخطأ والفوز</small></span><button id="toggleSound" class="'+(settings.sound?'primary':'')+'">'+(settings.sound?'مفعّل':'متوقف')+'</button></div><div class="levelrow"><span>📳 الاهتزاز<small>اهتزاز خفيف عند الحركة والتنبيه (إن كان مدعومًا)</small></span><button id="toggleVibration" class="'+(settings.vibration?'primary':'')+'">'+(settings.vibration?'مفعّل':'متوقف')+'</button></div><div class="levelrow"><span>💾 حفظ التقدم<small>المراحل والعملات والنجوم تُحفظ محليًا تلقائيًا</small></span><button disabled>تلقائي</button></div><button id="resume" class="primary" style="width:100%;margin-top:12px">حفظ والعودة</button>');return}
  if(b.id==='buyHint'){
   if(!spendCoins(15))return;
   closeModal();
@@ -279,7 +279,7 @@ $('#modalBody').addEventListener('click',e=>{
  }
  if(b.id==='buySkip'){if(!spendCoins(100))return;closeModal();if(levelIndex<totalLevels-1){levelIndex++;resetBoard();toast('تم تجاوز المرحلة مقابل 100 عملة.')}else{won=true;updateHUD();openModal('🏆 انتهت الحملة','أكملت جميع المراحل في هذه النسخة.','<button id="replay" class="primary">العب من البداية</button>')}return}
  if(b.id==='replay'){levelIndex=0;resetBoard();closeModal();return}
- if(b.id==='settings'){openModal('الإعدادات','الصوت والاهتزاز وحفظ التقدم ستُضاف في مرحلة تحسين الجودة.','<button id="resume" class="primary">العودة للعبة</button>');return}
+ if(b.id==='settings'){openModal('الإعدادات','خصّص تجربة اللعب. تُحفظ اختياراتك على هذا الجهاز.','<div class="levelrow"><span>🔊 المؤثرات الصوتية<small>أصوات بسيطة للحركة والخطأ والفوز</small></span><button id="toggleSound" class="'+(settings.sound?'primary':'')+'">'+(settings.sound?'مفعّل':'متوقف')+'</button></div><div class="levelrow"><span>📳 الاهتزاز<small>اهتزاز خفيف عند الحركة والتنبيه (إن كان مدعومًا)</small></span><button id="toggleVibration" class="'+(settings.vibration?'primary':'')+'">'+(settings.vibration?'مفعّل':'متوقف')+'</button></div><div class="levelrow"><span>💾 حفظ التقدم<small>المراحل والعملات والنجوم تُحفظ محليًا تلقائيًا</small></span><button disabled>تلقائي</button></div><button id="resume" class="primary" style="width:100%;margin-top:12px">حفظ والعودة</button>');return}
  if(b.id==='levels'){
   let html='<div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin-top:12px">';
   for(let i=0;i<totalLevels;i++){const completed=completedLevels.includes(i),unlocked=i<=levelIndex||completed;html+='<button data-level="'+i+'" '+(unlocked?'':'disabled')+' style="min-height:46px;padding:6px;'+(completed?'background:#245344;border-color:#4c9d7c;':i===levelIndex?'background:#77f0bd;color:#102438;border-color:#b5ffe0;':'')+'">'+(completed?'✓ ':'')+(i+1)+'</button>'}
