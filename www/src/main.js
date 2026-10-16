@@ -45,13 +45,13 @@ function saveSettings(){try{localStorage.setItem('trafficPuzzleSettings',JSON.st
 function feedback(kind='tap'){if(settings.vibration&&typeof navigator!=='undefined'&&navigator.vibrate)navigator.vibrate(kind==='win'?[35,45,70]:kind==='error'?35:12);if(!settings.sound)return;try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return;const ctx=new C(),osc=ctx.createOscillator(),gain=ctx.createGain();osc.type='sine';osc.frequency.value=kind==='win'?740:kind==='error'?180:440;gain.gain.setValueAtTime(.045,ctx.currentTime);gain.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.09);osc.connect(gain);gain.connect(ctx.destination);osc.start();osc.stop(ctx.currentTime+.1);osc.onended=()=>ctx.close()}catch{}}
 const colors=[M.blue,M.yellow,M.purple,M.orange,M.teal,M.red];
 const modes=[
- {name:'Traffic Command',ar:'التحكم في المرور',desc:'افتح مسار العبور بتحريك المركبات بالترتيب الصحيح.',icon:'🚦'},
- {name:'Bus Terminal',ar:'محطة الحافلات',desc:'حرّك الحافلات الطويلة حتى يصبح مخرج المحطة مفتوحًا.',icon:'🚌'},
- {name:'Bridge Builder',ar:'بناء الجسور',desc:'رتّب قطع الطريق لتفتح ممرًا آمنًا للعبور.',icon:'🌉'},
- {name:'Cargo Sort',ar:'فرز البضائع',desc:'حرّك شاحنات البضائع لتفتح ممر التسليم.',icon:'📦'},
- {name:'City Rescue',ar:'إنقاذ المدينة',desc:'أخلِ الطريق أمام مركبة الإنقاذ للوصول إلى موقعها.',icon:'🚒'},
- {name:'Train & Bus Connect',ar:'ربط النقل العام',desc:'نظّم الممرات لتصل وسيلة النقل إلى المخرج.',icon:'🚆'},
- {name:'Park & Flow',ar:'فكّ الاختناق',desc:'أخلِ الساحة بأقل عدد من الحركات.',icon:'🅿️'}
+ {name:'Traffic Command',ar:'Traffic Control',desc:'Clear the exit by moving vehicles in the right order.',icon:'🚦'},
+ {name:'Bus Terminal',ar:'Bus Terminal',desc:'Move the long buses to clear the terminal exit.',icon:'🚌'},
+ {name:'Bridge Builder',ar:'Bridge Builder',desc:'Arrange the road pieces to open a safe crossing.',icon:'🌉'},
+ {name:'Cargo Sort',ar:'Cargo Sort',desc:'Move cargo trucks to open the delivery lane.',icon:'📦'},
+ {name:'City Rescue',ar:'City Rescue',desc:'Clear the road for the rescue vehicle.',icon:'🚒'},
+ {name:'Train & Bus Connect',ar:'Transit Link',desc:'Clear the lanes to reach the exit.',icon:'🚆'},
+ {name:'Park & Flow',ar:'Traffic Jam',desc:'أخلِ الساحة بأقل عدد من الحركات.',icon:'🅿️'}
 ];
 const totalLevels=30;
 const levelName=i=>modes[0];
@@ -174,14 +174,14 @@ function resetBoard(){
  // Make the target and pieces sit on the cell centers, with their row/col as source of truth.
  updateHUD();drawSelection();save();
 }
-function spendCoins(amount){if(coins<amount){toast('عملاتك غير كافية. أكمل مراحل أخرى لجمع المزيد.');return false}coins-=amount;save();updateHUD();return true}
-function showStore(){openModal('🪙 متجر Traffic Command','اللعبة مجانية. اجمع العملات باللعب واستعملها للتلميحات أو لتجاوز مرحلة صعبة. الدفع الحقيقي عبر Google Play يحتاج ربط Billing واختباره قبل النشر.', '<div class="levelrow"><span>🧭 تلميح واحد<small>يساعدك على اختيار المركبة المناسبة</small></span><button id="buyHint" class="gold">15 🪙</button></div><div class="levelrow"><span>⏭️ تجاوز المرحلة<small>تجاوز المرحلة الحالية مقابل عملات اللعبة</small></span><button id="buySkip" class="gold">100 🪙</button></div><div class="levelrow"><span>💳 شراء العملات بأموال حقيقية<small>غير مفعّل في هذه النسخة؛ لن نعرض شراءً وهميًا</small></span><button disabled>قريبًا</button></div>');}
+function spendCoins(amount){if(coins<amount){toast('Not enough coins. Complete more levels to earn coins.');return false}coins-=amount;save();updateHUD();return true}
+function showStore(){openModal('🪙 Traffic Command Store','The game is free. Earn coins by playing and spend them on hints or skipping a difficult level. Real-money purchases are not enabled in this build.', '<div class="levelrow"><span>🧭 One hint<small>Helps you choose the right vehicle</small></span><button id="buyHint" class="gold">15 🪙</button></div><div class="levelrow"><span>⏭️ Skip level<small>Skip level الحالية مقابل عملات اللعبة</small></span><button id="buySkip" class="gold">100 🪙</button></div><div class="levelrow"><span>💳 Real-money coin purchases<small>Not available in this build</small></span><button disabled>Coming soon</button></div>');}
 function updateHUD(){
  const mode=levelName(levelIndex),difficulty=levelIndex%10+1;
  $('#coins').textContent=coins;$('#level').textContent=(levelIndex+1)+' / '+totalLevels;
  $('#stars').textContent=stars+' ★';$('#moves').textContent=moves;
  $('#levelbar').style.width=((levelIndex+1)/totalLevels*100)+'%';
- $('#mission').textContent='🚦 '+mode.ar+' · المرحلة '+(levelIndex+1);
+ $('#mission').textContent='🚦 '+mode.ar+' · Level '+(levelIndex+1);
  $('#description').textContent=mode.desc;
  $('#next').disabled=!won;$('#hint').style.display=(won||moves>0)?'none':'block';
  $('#hint').textContent='حرّك المركبات التي تسدّ الصف الأوسط، ثم اسحب المركبة الحمراء إلى المخرج الأخضر.';
@@ -209,7 +209,7 @@ function canMove(v,delta){
 function moveVehicle(v,delta){
  if(!v||won)return;
  const d=v.userData,steps=Math.round(delta);
- if(!steps||!canMove(v,steps)){feedback('error');toast('هذا المسار مغلق. جرّب اتجاهًا آخر.');return}
+ if(!steps||!canMove(v,steps)){feedback('error');toast('That path is blocked. Try another direction.');return}
  savedMoves.push({id:d.id,row:d.row,col:d.col});
  if(d.dir==='v')d.row+=steps;else d.col+=steps;
  v.position.x=d.col-2.5+(d.dir==='h'?(d.len-1)/2:0);v.position.z=d.row-2.5+(d.dir==='v'?(d.len-1)/2:0);moves++;selected=v;feedback('tap');drawSelection();updateHUD();
@@ -221,20 +221,22 @@ function finishLevel(){
  const firstClear=!completedLevels.includes(levelIndex);
  if(firstClear){completedLevels.push(levelIndex);stars+=earned;coins+=20+earned*10;}
  save();updateHUD();
- $('#next').disabled=false;$('#mission').textContent='🎉 أحسنت! الطريق مفتوح';
- $('#description').textContent=firstClear?'+'+(20+earned*10)+' عملة · '+earned+' نجوم. أكمل الحملة!':'أعدت إكمال هذه المرحلة؛ المكافأة تُمنح مرة واحدة فقط.';
- $('#hint').style.display='block';$('#hint').textContent='مرحلة مكتملة! تابع إلى التحدي التالي.';
- toast(firstClear?'نجحت! +'+(20+earned*10)+' عملة · '+earned+' نجوم':'أُكملت المرحلة من جديد دون تكرار المكافأة.');
+ $('#next').disabled=false;$('#mission').textContent='🎉 Great job! The exit is clear';
+ $('#description').textContent=firstClear?'+'+(20+earned*10)+' coins · '+earned+' stars. أكمل الحملة!':'أعدت إكمال هذه المرحلة؛ المكافأة تُمنح مرة واحدة فقط.';
+ $('#hint').style.display='block';$('#hint').textContent='Level complete! Continue to the next challenge.';
+ toast(firstClear?'Solved! +'+(20+earned*10)+' coins · '+earned+' stars':'Level replayed; no duplicate reward.');
 }
 function raycast(e){
  const rect=canvas.getBoundingClientRect(),x=(e.clientX-rect.left)/rect.width*2-1,y=-((e.clientY-rect.top)/rect.height*2-1);
  const ray=new THREE.Raycaster();ray.setFromCamera({x,y},camera);return ray;
 }
 let pointerStart=null;
+canvas.style.touchAction='none';
+canvas.addEventListener('contextmenu',e=>e.preventDefault());
 canvas.addEventListener('pointerdown',e=>{
  e.preventDefault();
  try{canvas.setPointerCapture(e.pointerId)}catch{}
- pointerStart={x:e.clientX,y:e.clientY,at:Date.now(),v:null};
+ pointerStart={x:e.clientX,y:e.clientY,at:Date.now(),v:null,pointerId:e.pointerId};
  const hits=raycast(e).intersectObjects(vehicles,true);
  if(hits.length){let o=hits[0].object;while(o&&!vehicles.includes(o))o=o.parent;if(o){selected=o;pointerStart.v=o;drawSelection()}}
 });
@@ -242,10 +244,12 @@ canvas.addEventListener('pointerup',e=>{
  if(!pointerStart)return;
  const start=pointerStart;pointerStart=null;
  const dx=e.clientX-start.x,dy=e.clientY-start.y;
- if(start.v&&(Math.abs(dx)+Math.abs(dy)>12)){
+ if(start.v&&(Math.abs(dx)+Math.abs(dy)>8)){
   const v=start.v,dir=v.userData.dir;
-  let delta=dir==='h'?Math.round(dx/(innerWidth/8.2)):Math.round(dy/(innerWidth/8.2));
-  if(!delta){const val=dir==='h'?dx:dy;delta=Math.sign(val);}
+  const cellPixels=innerWidth/8.2;
+  const val=dir==='h'?dx:dy;
+  let delta=Math.round(val/cellPixels);
+  if(!delta&&Math.abs(val)>8)delta=Math.sign(val);
   moveVehicle(v,delta);
  }else if(!start.v){
   const hits=raycast(e).intersectObjects(vehicles,true);
@@ -254,19 +258,19 @@ canvas.addEventListener('pointerup',e=>{
 });
 canvas.addEventListener('pointercancel',()=>{pointerStart=null;});
 canvas.addEventListener('lostpointercapture',()=>{pointerStart=null;});
-$('#undo').onclick=()=>{if(won||!savedMoves.length){toast('لا توجد حركة للتراجع عنها.');return}const last=savedMoves.pop(),v=vehicles.find(x=>x.userData.id===last.id);if(v){v.userData.row=last.row;v.userData.col=last.col;v.position.x=last.col-2.5+(v.userData.dir==='h'?(v.userData.len-1)/2:0);v.position.z=last.row-2.5+(v.userData.dir==='v'?(v.userData.len-1)/2:0);moves=Math.max(0,moves-1);selected=v;drawSelection();updateHUD();save()}};
-$('#restart').onclick=()=>{resetBoard();toast('أُعيد ترتيب المرحلة.');};
-$('#next').onclick=()=>{if(!won)return;if(levelIndex<totalLevels-1)levelIndex++;else{openModal('🏆 أكملت Traffic Command!','أكملت جميع المراحل المتاحة في هذه النسخة.','<button id="replay" class="primary">العب من البداية</button>');return}resetBoard();toast('المرحلة التالية!');};
+$('#undo').onclick=()=>{if(won||!savedMoves.length){toast('Nothing to undo.');return}const last=savedMoves.pop(),v=vehicles.find(x=>x.userData.id===last.id);if(v){v.userData.row=last.row;v.userData.col=last.col;v.position.x=last.col-2.5+(v.userData.dir==='h'?(v.userData.len-1)/2:0);v.position.z=last.row-2.5+(v.userData.dir==='v'?(v.userData.len-1)/2:0);moves=Math.max(0,moves-1);selected=v;drawSelection();updateHUD();save()}};
+$('#restart').onclick=()=>{resetBoard();toast('Level restarted.');};
+$('#next').onclick=()=>{if(!won)return;if(levelIndex<totalLevels-1)levelIndex++;else{openModal('🏆 أكملت Traffic Command!','You completed all available levels in this build.','<button id="replay" class="primary">Play again</button>');return}resetBoard();toast('Next level!');};
 $('#store').onclick=showStore;
-$('#pause').onclick=()=>openModal('اللعبة متوقفة مؤقتًا','تقدمك محفوظ تلقائيًا على هذا الجهاز.','<button id="resume" class="primary">متابعة اللعب</button><button id="levels">خريطة الحملة</button><button id="settings">الإعدادات</button>');
+$('#pause').onclick=()=>openModal('Game paused','Your progress is saved automatically on this device.','<button id="resume" class="primary">Resume</button><button id="levels">Campaign map</button><button id="settings">Settings</button>');
 function openModal(title,text,html=''){ $('#modalTitle').textContent=title;$('#modalText').textContent=text;$('#modalBody').innerHTML=html;$('#modal').classList.add('open');$('#shade').classList.add('open');}
 function closeModal(){$('#modal').classList.remove('open');$('#shade').classList.remove('open')}
 $('#close').onclick=closeModal;$('#shade').onclick=closeModal;
 $('#modalBody').addEventListener('click',e=>{
  const b=e.target.closest('button');if(!b)return;
  if(b.id==='resume'){saveSettings();closeModal();return}
- if(b.id==='toggleSound'){settings.sound=!settings.sound;saveSettings();openModal('الإعدادات','خصّص تجربة اللعب. تُحفظ اختياراتك على هذا الجهاز.','<div class="levelrow"><span>🔊 المؤثرات الصوتية<small>أصوات بسيطة للحركة والخطأ والفوز</small></span><button id="toggleSound" class="'+(settings.sound?'primary':'')+'">'+(settings.sound?'مفعّل':'متوقف')+'</button></div><div class="levelrow"><span>📳 الاهتزاز<small>اهتزاز خفيف عند الحركة والتنبيه (إن كان مدعومًا)</small></span><button id="toggleVibration" class="'+(settings.vibration?'primary':'')+'">'+(settings.vibration?'مفعّل':'متوقف')+'</button></div><div class="levelrow"><span>💾 حفظ التقدم<small>المراحل والعملات والنجوم تُحفظ محليًا تلقائيًا</small></span><button disabled>تلقائي</button></div><button id="resume" class="primary" style="width:100%;margin-top:12px">حفظ والعودة</button>');return}
- if(b.id==='toggleVibration'){settings.vibration=!settings.vibration;saveSettings();openModal('الإعدادات','خصّص تجربة اللعب. تُحفظ اختياراتك على هذا الجهاز.','<div class="levelrow"><span>🔊 المؤثرات الصوتية<small>أصوات بسيطة للحركة والخطأ والفوز</small></span><button id="toggleSound" class="'+(settings.sound?'primary':'')+'">'+(settings.sound?'مفعّل':'متوقف')+'</button></div><div class="levelrow"><span>📳 الاهتزاز<small>اهتزاز خفيف عند الحركة والتنبيه (إن كان مدعومًا)</small></span><button id="toggleVibration" class="'+(settings.vibration?'primary':'')+'">'+(settings.vibration?'مفعّل':'متوقف')+'</button></div><div class="levelrow"><span>💾 حفظ التقدم<small>المراحل والعملات والنجوم تُحفظ محليًا تلقائيًا</small></span><button disabled>تلقائي</button></div><button id="resume" class="primary" style="width:100%;margin-top:12px">حفظ والعودة</button>');return}
+ if(b.id==='toggleSound'){settings.sound=!settings.sound;saveSettings();openModal('Settings','Customize your game. Your settings are saved on this device.','<div class="levelrow"><span>🔊 Sound effects<small>Simple sounds for moves, errors, and wins</small></span><button id="toggleSound" class="'+(settings.sound?'primary':'')+'">'+(settings.sound?'On':'Off')+'</button></div><div class="levelrow"><span>📳 Vibration<small>Light vibration for moves and alerts (if supported)</small></span><button id="toggleVibration" class="'+(settings.vibration?'primary':'')+'">'+(settings.vibration?'On':'Off')+'</button></div><div class="levelrow"><span>💾 Save progress<small>Levels, coins, and stars save automatically on this device</small></span><button disabled>Automatic</button></div><button id="resume" class="primary" style="width:100%;margin-top:12px">Save & return</button>');return}
+ if(b.id==='toggleVibration'){settings.vibration=!settings.vibration;saveSettings();openModal('Settings','Customize your game. Your settings are saved on this device.','<div class="levelrow"><span>🔊 Sound effects<small>Simple sounds for moves, errors, and wins</small></span><button id="toggleSound" class="'+(settings.sound?'primary':'')+'">'+(settings.sound?'On':'Off')+'</button></div><div class="levelrow"><span>📳 Vibration<small>Light vibration for moves and alerts (if supported)</small></span><button id="toggleVibration" class="'+(settings.vibration?'primary':'')+'">'+(settings.vibration?'On':'Off')+'</button></div><div class="levelrow"><span>💾 Save progress<small>Levels, coins, and stars save automatically on this device</small></span><button disabled>Automatic</button></div><button id="resume" class="primary" style="width:100%;margin-top:12px">Save & return</button>');return}
  if(b.id==='buyHint'){
   if(coins<15){toast('تحتاج إلى 15 عملة لشراء التلميح.');return;}
   closeModal();
@@ -303,20 +307,20 @@ $('#modalBody').addEventListener('click',e=>{
    if(!choice){toast('تعذّر تحديد الحركة المناسبة.');return;}
    if(!spendCoins(15))return;
    selected=choice;drawSelection();
-   const dir=choice.userData.dir==='v'?(hint.delta<0?'للأعلى':'للأسفل'):(hint.delta<0?'لليسار':'لليمين');
-   toast('التلميح: حرّك المركبة المحددة '+Math.abs(hint.delta)+' خانة '+dir+'.');
-  }else toast('لم أجد حلًا آليًا لهذه الوضعية؛ أعد المرحلة دون خصم عملات.');
+   const dir=choice.userData.dir==='v'?(hint.delta<0?'up':'down'):(hint.delta<0?'left':'right');
+   toast('Hint: Move the highlighted vehicle '+Math.abs(hint.delta)+'  spaces '+dir+'.');
+  }else toast('No solution was found for this board. Restart without spending coins.');
 
   return;
  }
- if(b.id==='buySkip'){if(!spendCoins(100))return;closeModal();if(levelIndex<totalLevels-1){levelIndex++;resetBoard();toast('تم تجاوز المرحلة مقابل 100 عملة.')}else{won=true;updateHUD();openModal('🏆 انتهت الحملة','أكملت جميع المراحل في هذه النسخة.','<button id="replay" class="primary">العب من البداية</button>')}return}
+ if(b.id==='buySkip'){if(!spendCoins(100))return;closeModal();if(levelIndex<totalLevels-1){levelIndex++;resetBoard();toast('تم Skip level مقابل 100 عملة.')}else{won=true;updateHUD();openModal('🏆 Campaign complete','أكملت جميع المراحل في هذه النسخة.','<button id="replay" class="primary">Play again</button>')}return}
  if(b.id==='replay'){levelIndex=0;resetBoard();closeModal();return}
- if(b.id==='settings'){openModal('الإعدادات','خصّص تجربة اللعب. تُحفظ اختياراتك على هذا الجهاز.','<div class="levelrow"><span>🔊 المؤثرات الصوتية<small>أصوات بسيطة للحركة والخطأ والفوز</small></span><button id="toggleSound" class="'+(settings.sound?'primary':'')+'">'+(settings.sound?'مفعّل':'متوقف')+'</button></div><div class="levelrow"><span>📳 الاهتزاز<small>اهتزاز خفيف عند الحركة والتنبيه (إن كان مدعومًا)</small></span><button id="toggleVibration" class="'+(settings.vibration?'primary':'')+'">'+(settings.vibration?'مفعّل':'متوقف')+'</button></div><div class="levelrow"><span>💾 حفظ التقدم<small>المراحل والعملات والنجوم تُحفظ محليًا تلقائيًا</small></span><button disabled>تلقائي</button></div><button id="resume" class="primary" style="width:100%;margin-top:12px">حفظ والعودة</button>');return}
+ if(b.id==='settings'){openModal('Settings','Customize your game. Your settings are saved on this device.','<div class="levelrow"><span>🔊 Sound effects<small>Simple sounds for moves, errors, and wins</small></span><button id="toggleSound" class="'+(settings.sound?'primary':'')+'">'+(settings.sound?'On':'Off')+'</button></div><div class="levelrow"><span>📳 Vibration<small>Light vibration for moves and alerts (if supported)</small></span><button id="toggleVibration" class="'+(settings.vibration?'primary':'')+'">'+(settings.vibration?'On':'Off')+'</button></div><div class="levelrow"><span>💾 Save progress<small>Levels, coins, and stars save automatically on this device</small></span><button disabled>Automatic</button></div><button id="resume" class="primary" style="width:100%;margin-top:12px">Save & return</button>');return}
  if(b.id==='levels'){
   let html='<div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin-top:12px">';
   for(let i=0;i<totalLevels;i++){const completed=completedLevels.includes(i),unlocked=i<=levelIndex||completed;html+='<button data-level="'+i+'" '+(unlocked?'':'disabled')+' style="min-height:46px;padding:6px;'+(completed?'background:#245344;border-color:#4c9d7c;':i===levelIndex?'background:#77f0bd;color:#102438;border-color:#b5ffe0;':'')+'">'+(completed?'✓ ':'')+(i+1)+'</button>'}
-  html+='</div><div class="muted" style="margin-top:10px">الأخضر: مكتملة · الفاتح: المرحلة الحالية · المراحل الرمادية مقفلة حتى تتقدم.</div>';
-  openModal('خريطة الحملة','اختر أي مرحلة سبق أن فتحتها.',html);return;
+  html+='</div><div class="muted" style="margin-top:10px">Green: completed · Light: current level · Grey: locked</div>';
+  openModal('Campaign map','Choose any level you have already unlocked.',html);return;
  }
  if(b.dataset.level){const n=Number(b.dataset.level);if(n<=levelIndex||completedLevels.includes(n)){levelIndex=n;resetBoard();closeModal()}return}
 });
