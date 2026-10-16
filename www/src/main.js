@@ -1,73 +1,332 @@
 import * as THREE from 'three';
 
-const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
-const canvas=$('#world');
-const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));renderer.setSize(innerWidth,innerHeight);
-renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.12;
-const scene=new THREE.Scene();scene.background=new THREE.Color('#72caff');scene.fog=new THREE.Fog('#a6e4ff',48,115);
-const camera=new THREE.PerspectiveCamera(42,innerWidth/innerHeight,.1,180);let topView=true;
-function setCamera(){topView=true;camera.up.set(0,0,-1);camera.position.set(0,48,.001);camera.lookAt(0,0,0);camera.updateProjectionMatrix();$('#camera').textContent='⬇ VUE HAUTE';$('#camera').disabled=false;$('#camera').style.opacity='1'}
-setCamera();
-scene.add(new THREE.HemisphereLight('#ffffff','#8298c0',2.1));const sun=new THREE.DirectionalLight('#fff0c8',2.8);sun.position.set(-12,28,18);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);scene.add(sun);
-const mat=c=>new THREE.MeshStandardMaterial({color:c,roughness:.56});
-const m={grass:mat('#57d879'),road:mat('#515f7d'),line:mat('#fff3cf'),pavement:mat('#e2f4ff'),white:mat('#fffdf6'),glass:mat('#a5edff'),rubber:mat('#263148'),yellow:mat('#ffe52b'),cyan:mat('#15d8f4'),pink:mat('#ff42b7'),blue:mat('#2675ff'),green:mat('#27e653'),orange:mat('#ff9419'),purple:mat('#a238ff'),red:mat('#ff3655'),gold:mat('#ffca30'),build:[mat('#ffb26e'),mat('#65c8ff'),mat('#d19aff'),mat('#72e5d0')]};
-const box=new THREE.BoxGeometry(1,1,1);
-function cube(parent,x,y,z,sx,sy,sz,material,cast=true){const o=new THREE.Mesh(box,material);o.position.set(x,y,z);o.scale.set(sx,sy,sz);o.castShadow=cast;o.receiveShadow=true;parent.add(o);return o}
-function group(parent,x=0,y=0,z=0){const g=new THREE.Group();g.position.set(x,y,z);parent.add(g);return g}
-function cyl(parent,x,y,z,r,h,material,n=14){const o=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,n),material);o.position.set(x,y,z);o.castShadow=true;parent.add(o);return o}
-cube(scene,0,-.75,0,100,.6,100,m.grass,false);cube(scene,0,-.39,0,12,.22,60,m.road,false);
-cube(scene,-6.3,-.25,0,.45,.2,60,m.pavement,false);cube(scene,6.3,-.25,0,.45,.2,60,m.pavement,false);
-for(let z=-28;z<30;z+=3.2)cube(scene,0,-.26,z,.16,.04,1.45,m.line,false);
-function tree(x,z){const g=group(scene,x,0,z);cyl(g,0,.65,0,.18,1.3,mat('#9b603c'));cyl(g,0,1.65,0,.72,1.25,mat('#22ce75'));cyl(g,-.25,1.95,.05,.47,.75,mat('#63f06e'));cyl(g,.27,1.85,-.05,.48,.8,mat('#13bb83'))}
-for(const side of [-1,1])for(let z=-24;z<=24;z+=6)tree(side*7.6,z);
-const plots=[];for(const side of [-1,1])for(let i=0;i<6;i++){const z=-24+i*9;plots.push({side,z,x:side*10,mesh:null})}
-function building(p,level=0){if(p.mesh)scene.remove(p.mesh);const g=group(scene,p.x,0,p.z);const h=level?4+level*1.2:4+(Math.abs(p.z)+2)%3*1.5;cube(g,0,h/2,0,4.4,h,4.4,m.build[(Math.floor(Math.abs(p.z/3))+(p.side>0?1:0))%4]);cube(g,0,h+.1,0,4.6,.22,4.6,m.white);for(let y=1;y<h-.5;y+=1.35)for(const x of [-1.25,0,1.25])cube(g,x,y,2.22,.55,.72,.06,m.glass,false);p.mesh=g}
-plots.forEach(p=>building(p));
-cube(scene,0,-.05,14,23,.22,10,m.pavement,false);cube(scene,0,.08,14,19,.16,7,m.road,false);
-for(let x=-7;x<=7;x+=3.5){cube(scene,x,.2,14,2.7,.15,4,m.white);cube(scene,x,.35,12.1,2.5,.18,.25,m.gold)}
-const colors=[m.yellow,m.cyan,m.pink,m.blue,m.green,m.orange,m.purple,m.red],buses=[];
-function makeBus(i){const g=group(scene);const color=colors[i%colors.length];cube(g,0,.72,0,1.6,1.1,3.35,color);cube(g,0,1.3,-.15,1.42,.48,2.4,m.glass);cube(g,0,.26,0,1.7,.18,3.4,m.white);cube(g,0,.78,1.7,1.05,.53,.05,m.white);cube(g,0,.85,1.74,.52,.12,.06,m.yellow);for(const z of [-1.12,1.12])for(const x of [-.84,.84]){const w=cyl(g,x,.32,z,.24,.15,m.rubber);w.rotation.z=Math.PI/2}g.userData={id:i+1,route:null,driver:false,travel:0,baseZ:0};scene.add(g);return g}
-function placeBus(b,i){b.position.set((i%3-1)*2.8,.05,-24+Math.floor(i/3)*5);b.userData.baseZ=b.position.z}
-const routeData=[{name:'Centre-ville',cost:0,earning:45,passengers:18,unlocked:true,desc:'Petite ligne idéale pour débuter.'},{name:'Quartier des affaires',cost:450,earning:85,passengers:32,unlocked:false,desc:'Trajet plus long et plus rentable.'},{name:'Front de mer',cost:900,earning:145,passengers:55,unlocked:false,desc:'Ligne touristique à fort trafic.'},{name:'Aéroport',cost:1800,earning:260,passengers:90,unlocked:false,desc:'La ligne premium de votre réseau.'}];
-const fresh=()=>({money:350,level:1,passengers:0,drivers:0,completed:0,active:0,busCount:1,routes:routeData.map(r=>({...r})),claimed:[],sound:false});
-let state=fresh();
-try{const raw=JSON.parse(localStorage.getItem('busEmpireSave')||'null');if(raw){state={...state,...raw};state.routes=routeData.map((r,i)=>({...r,...(raw.routes?.[i]||{}),unlocked:i===0?true:!!raw.routes?.[i]?.unlocked}));state.claimed=Array.isArray(raw.claimed)?raw.claimed:[];state.busCount=Math.max(1,Math.min(30,Number(raw.busCount)||1));state.active=Math.max(0,Math.min(state.routes.length-1,Number(state.active)||0))}}catch{state=fresh()}
-for(let i=0;i<state.busCount;i++){const b=makeBus(i);placeBus(b,i);if(i<state.drivers)b.userData.driver=true;buses.push(b)}
-let toastTimer,audioContext=null;
-function playSound(){if(!state.sound)return;try{const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;audioContext=audioContext||new AC();if(audioContext.state==='suspended')audioContext.resume();const osc=audioContext.createOscillator(),gain=audioContext.createGain();osc.type='sine';osc.frequency.value=660;gain.gain.setValueAtTime(.035,audioContext.currentTime);gain.gain.exponentialRampToValueAtTime(.001,audioContext.currentTime+.12);osc.connect(gain);gain.connect(audioContext.destination);osc.start();osc.stop(audioContext.currentTime+.12)}catch{}}
-function toast(message){const el=$('#toast');el.textContent=message;el.classList.add('show');playSound();clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2100)}
-function save(){try{localStorage.setItem('busEmpireSave',JSON.stringify({...state,busCount:buses.length}))}catch{toast('Sauvegarde indisponible sur cet appareil.')}}
-function update(){const route=state.routes[state.active];$('#money').textContent=Math.floor(state.money).toLocaleString('fr-FR');$('#fleet').textContent=buses.length+' bus';$('#passengers').textContent=state.passengers.toLocaleString('fr-FR');$('#level').textContent='Niv. '+state.level;$('#routeName').textContent=route.name;$('#routeState').textContent=state.completed+' trajets · '+route.passengers+' voyageurs / trajet';$('#buy').innerHTML='🚌 BUS<br><small>ACHETER · '+(250+buses.length*180)+' ◈</small>';$('#hire').innerHTML='👨‍✈️ CHAUFFEUR<br><small>RECRUTER · '+(100+state.drivers*80)+' ◈</small>';$('#fleetProgress').style.width=Math.min(100,buses.length/10*100)+'%';$('#passengerProgress').style.width=(state.passengers%100)+'%';$('#cityProgress').style.width=Math.min(100,(state.level%10)*10)+'%';$('#tip').textContent=state.completed===0?'🚌 Lance ta première ligne pour gagner des pièces.':state.drivers<buses.length?'👨‍✈️ Recrute des chauffeurs pour renforcer ta flotte.':'🏙️ Débloque de nouvelles lignes et agrandis la ville.';save()}
-function closeModal(){$('#modal').classList.remove('open');$('#shade').classList.remove('open')}
-function openModal(title,sub,html){$('#modalTitle').textContent=title;$('#modalSub').textContent=sub||'';$('#modalBody').innerHTML=html;$('#modal').classList.add('open');$('#shade').classList.add('open');$('#modal').scrollTop=0}
-$('#close').onclick=closeModal;$('#shade').onclick=closeModal;
-function spend(cost){if(state.money<cost){toast('Pas assez de pièces ! Il te faut '+cost+'.');return false}state.money-=cost;return true}
-function buyBus(){const cost=250+buses.length*180;if(buses.length>=30)return toast('Garage plein : limite de 30 bus.');if(!spend(cost))return;const b=makeBus(buses.length);placeBus(b,buses.length);buses.push(b);update();toast('Nouveau bus ajouté au garage !')}
-function hireDriver(){const cost=100+state.drivers*80;if(state.drivers>=buses.length){toast('Chaque chauffeur a besoin d’un bus disponible.');return}if(!spend(cost))return;state.drivers++;const b=buses.find(x=>!x.userData.driver);if(b)b.userData.driver=true;update();toast('Chauffeur recruté et affecté !')}
-function dispatch(){const bus=buses.find(b=>b.userData.driver&&!b.userData.travel);if(!bus){if(!state.drivers){toast('Recrute un chauffeur avant de lancer un trajet.');return}if(buses.every(b=>b.userData.travel)){toast('Tous les bus sont en trajet. Attends leur retour !');return}toast('Affecte un chauffeur à un bus depuis le garage.');return}bus.userData.route=state.active;bus.userData.travel=1;toast('Trajet lancé : le bus est en route !');update()}
-function routeMenu(){openModal('🗺️ Réseau de transport','Débloque les lignes, puis sélectionne celle que tu veux exploiter.',state.routes.map((r,i)=>'<div class="item"><div><b>'+r.name+(state.active===i?' · ACTIVE':'')+'</b><small>'+r.desc+'<br>+'+r.earning+' pièces · '+r.passengers+' voyageurs</small></div><button data-route="'+i+'" class="'+(r.unlocked?'':'orange')+'">'+(r.unlocked?(state.active===i?'SÉLECTIONNÉE':'CHOISIR'):('DÉBLOQUER '+r.cost+' ◈'))+'</button></div>').join(''))}
-function fleetMenu(){openModal('🚍 Garage et flotte','Tes bus parcourent la ville en temps réel. Appuie sur un bus dans la ville pour voir son statut.',buses.map((b,i)=>'<div class="item"><div><b>Bus #'+(i+1)+' · '+colors[i%colors.length].color.getHexString().toUpperCase()+'</b><small>'+(b.userData.driver?'Chauffeur affecté':'Sans chauffeur')+'<br>'+(b.userData.travel?'En trajet':'Au dépôt')+'</small></div><button data-bus="'+i+'">'+(b.userData.driver?'DÉSAFFECTER':'AFFECTER')+'</button></div>').join('')+'<button class="wide primary" id="fleetBuy">＋ Acheter un bus · '+(250+buses.length*180)+' ◈</button>')}
-function cityMenu(){const cost=400*state.level;openModal('🏙️ Développement urbain','Chaque amélioration transforme les bâtiments et augmente ton niveau.', '<div class="item"><div><b>Améliorer la ville · niveau '+(state.level+1)+'</b><small>Coût : '+cost+' pièces<br>Les bâtiments gagnent en hauteur et en prestige.</small></div><button id="upgradeCity" class="orange">AMÉLIORER</button></div><div class="item"><div><b>Prochain objectif</b><small>Atteins le niveau 5 pour une ville plus développée.</small></div><b>'+state.level+'/5</b></div>')}
-const goals=[{id:'first',title:'Premier trajet',desc:'Terminer un trajet',reward:100,done:()=>state.completed>=1},{id:'crowd',title:'La foule arrive',desc:'Transporter 100 voyageurs',reward:150,done:()=>state.passengers>=100},{id:'fleet3',title:'Petite flotte',desc:'Posséder 3 bus',reward:200,done:()=>buses.length>=3},{id:'driver',title:'Équipe en place',desc:'Recruter 2 chauffeurs',reward:150,done:()=>state.drivers>=2},{id:'network',title:'Explorateur urbain',desc:'Débloquer 3 lignes',reward:300,done:()=>state.routes.filter(r=>r.unlocked).length>=3},{id:'mayor',title:'Maire de la ville',desc:'Atteindre le niveau 3',reward:250,done:()=>state.level>=3},{id:'pro',title:'Empire du transport',desc:'Terminer 20 trajets',reward:500,done:()=>state.completed>=20}];
-function checkAchievements(){for(const g of goals){if(g.done()&&!state.claimed.includes(g.id)){toast('Objectif disponible : '+g.title+' !');break}}}
-function achievementsMenu(){openModal('🏆 Succès et objectifs','Réclame des récompenses en accomplissant des objectifs.',goals.map(g=>{const done=g.done(),claimed=state.claimed.includes(g.id);return '<div class="item"><div><b>'+(done?'✓ ':'')+g.title+'</b><small>'+g.desc+'<br>Récompense : '+g.reward+' ◈</small></div><button data-claim="'+g.id+'" '+(!done||claimed?'disabled':'')+'>'+(claimed?'RÉCLAMÉ':done?'RÉCLAMER':'EN COURS')+'</button></div>'}).join(''))}
-function settingsMenu(){openModal('⚙️ Menu et paramètres','Ta progression est enregistrée automatiquement sur cet appareil.','<div class="item"><div><b>Effets sonores</b><small>Retour sonore des actions de jeu (option activable).</small></div><button id="soundToggle">'+(state.sound?'ACTIVÉS':'DÉSACTIVÉS')+'</button></div><div class="item"><div><b>Aide rapide</b><small>Gagne des pièces en lançant des trajets. Achète des bus, recrute des chauffeurs et débloque les lignes.</small></div><button id="helpBtn">LIRE</button></div><div class="item"><div><b>Réinitialiser la partie</b><small>Efface la progression locale de cette partie. Action irréversible.</small></div><button id="resetAsk" class="orange">RÉINITIALISER</button></div><p class="sub">Version prototype · progression sauvegardée uniquement sur cet appareil.</p>')}
-$('#run').onclick=dispatch;$('#buy').onclick=buyBus;$('#hire').onclick=hireDriver;$('#routes').onclick=routeMenu;$('#fleetBtn').onclick=fleetMenu;$('#city').onclick=cityMenu;$('#achievements').onclick=achievementsMenu;$('#menu').onclick=settingsMenu;
-$('#camera').onclick=()=>toast('La vue du dessus est fixe dans cette version.');
-$('#modalBody').addEventListener('click',e=>{const btn=e.target.closest('button');if(!btn)return;
- if(btn.dataset.route!==undefined){const i=Number(btn.dataset.route),r=state.routes[i];if(!r)return;if(!r.unlocked){if(!spend(r.cost))return;state.routes[i].unlocked=true;toast('Ligne débloquée : '+r.name)}state.active=i;closeModal();update();return}
- if(btn.dataset.bus!==undefined){const b=buses[Number(btn.dataset.bus)];if(!b)return;if(b.userData.driver){b.userData.driver=false;state.drivers=Math.max(0,state.drivers-1);toast('Chauffeur retiré du bus.')}else if(state.drivers>0){b.userData.driver=true;toast('Chauffeur affecté au bus.')}else{toast('Recrute d’abord un chauffeur.')}update();fleetMenu();return}
- if(btn.dataset.claim){const g=goals.find(x=>x.id===btn.dataset.claim);if(!g||!g.done()||state.claimed.includes(g.id))return;state.claimed.push(g.id);state.money+=g.reward;update();achievementsMenu();toast('Récompense reçue : +'+g.reward+' pièces !');return}
- if(btn.id==='fleetBuy'){closeModal();buyBus();return}
- if(btn.id==='upgradeCity'){const cost=400*state.level;if(!spend(cost))return;state.level++;plots.forEach((p,i)=>building(p,i<state.level+2?state.level:0));update();cityMenu();toast('La ville est passée au niveau '+state.level+' !');return}
- if(btn.id==='soundToggle'){state.sound=!state.sound;save();settingsMenu();toast(state.sound?'Option sonore activée':'Option sonore désactivée');return}
- if(btn.id==='helpBtn'){openModal('📘 Comment jouer','Les bases pour construire ton empire.','<div class="item"><div><b>1 · Lance une ligne</b><small>Chaque trajet rapporte des pièces et transporte des voyageurs.</small></div></div><div class="item"><div><b>2 · Achète des bus</b><small>Plus de bus, plus de capacité pour développer ta compagnie.</small></div></div><div class="item"><div><b>3 · Recrute des chauffeurs</b><small>Affecte les chauffeurs aux bus depuis le garage.</small></div></div><div class="item"><div><b>4 · Débloque le réseau</b><small>Investis tes pièces dans de nouvelles lignes et la ville.</small></div></div>');return}
- if(btn.id==='resetAsk'){openModal('⚠️ Effacer la progression ?','Cette action ne peut pas être annulée.','<p class="sub">Toute la progression locale sera effacée et la partie recommencera à 350 pièces.</p><button class="wide orange" id="resetConfirm">OUI, EFFACER LA PARTIE</button><button class="wide" id="resetCancel">ANNULER</button>');return}
- if(btn.id==='resetCancel'){settingsMenu();return}
- if(btn.id==='resetConfirm'){state=fresh();buses.forEach(b=>scene.remove(b));buses.length=0;const b=makeBus(0);placeBus(b,0);buses.push(b);plots.forEach(p=>building(p,0));update();closeModal();toast('Nouvelle partie démarrée.');return}
+const $ = s => document.querySelector(s);
+const canvas = $('#world');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:false});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.6));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.08;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#9adcf3');
+scene.fog = new THREE.Fog('#9adcf3', 25, 55);
+const camera = new THREE.OrthographicCamera(-7,7,10,-10,.1,100);
+camera.position.set(0,18,.001);
+camera.up.set(0,0,-1);
+camera.lookAt(0,0,0);
+scene.add(new THREE.HemisphereLight('#ffffff','#7894aa',2.0));
+const sun = new THREE.DirectionalLight('#fff1d1',2.4);
+sun.position.set(-8,16,10); sun.castShadow=true; sun.shadow.mapSize.set(1024,1024); scene.add(sun);
+const mat = c => new THREE.MeshStandardMaterial({color:c,roughness:.5});
+const M = {
+ grass:mat('#66cf91'), road:mat('#42556b'), cell:mat('#52687d'), edge:mat('#dce8ed'),
+ white:mat('#ffffff'), mint:mat('#4df2ad'), target:mat('#ff5368'), blue:mat('#4c9dff'),
+ yellow:mat('#ffcb52'), purple:mat('#a67cff'), orange:mat('#ff974f'), teal:mat('#39d6cc'),
+ red:mat('#ff5266'), glass:mat('#c8f5ff'), rubber:mat('#263647'), wood:mat('#bd8750'),
+ steel:mat('#aab8c6'), water:mat('#3aaee6'), fire:mat('#ff794f'), rail:mat('#e4edf4')
+};
+const boxGeo = new THREE.BoxGeometry(1,1,1);
+function cube(parent,x,y,z,sx,sy,sz,material,cast=true){
+ const o=new THREE.Mesh(boxGeo,material);o.position.set(x,y,z);o.scale.set(sx,sy,sz);o.castShadow=cast;o.receiveShadow=true;parent.add(o);return o;
+}
+function group(parent,x=0,y=0,z=0){const g=new THREE.Group();g.position.set(x,y,z);parent.add(g);return g;}
+const floor = cube(scene,0,-.6,0,20,.5,24,M.grass,false);
+const board = group(scene);
+const decor = group(scene);
+let objects=[], vehicles=[], selected=null, levelIndex=0, moves=0, coins=120, stars=0, completedLevels=[], won=false, savedMoves=[], levelState=null, toastTimer;
+let settings={sound:true,vibration:true};
+let restoredBoardState=null;
+try{const prefs=JSON.parse(localStorage.getItem('trafficPuzzleSettings')||'null');if(prefs)settings={sound:prefs.sound!==false,vibration:prefs.vibration!==false}}catch{}
+function saveSettings(){try{localStorage.setItem('trafficPuzzleSettings',JSON.stringify(settings))}catch{}}
+function feedback(kind='tap'){if(settings.vibration&&typeof navigator!=='undefined'&&navigator.vibrate)navigator.vibrate(kind==='win'?[35,45,70]:kind==='error'?35:12);if(!settings.sound)return;try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return;const ctx=new C(),osc=ctx.createOscillator(),gain=ctx.createGain();osc.type='sine';osc.frequency.value=kind==='win'?740:kind==='error'?180:440;gain.gain.setValueAtTime(.045,ctx.currentTime);gain.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.09);osc.connect(gain);gain.connect(ctx.destination);osc.start();osc.stop(ctx.currentTime+.1);osc.onended=()=>ctx.close()}catch{}}
+const colors=[M.blue,M.yellow,M.purple,M.orange,M.teal,M.red];
+const modes=[
+ {name:'Traffic Command',ar:'Traffic Control',desc:'Clear the exit by moving vehicles in the right order.',icon:'🚦'},
+ {name:'Bus Terminal',ar:'Bus Terminal',desc:'Move the long buses to clear the terminal exit.',icon:'🚌'},
+ {name:'Bridge Builder',ar:'Bridge Builder',desc:'Arrange the road pieces to open a safe crossing.',icon:'🌉'},
+ {name:'Cargo Sort',ar:'Cargo Sort',desc:'Move cargo trucks to open the delivery lane.',icon:'📦'},
+ {name:'City Rescue',ar:'City Rescue',desc:'Clear the road for the rescue vehicle.',icon:'🚒'},
+ {name:'Train & Bus Connect',ar:'Transit Link',desc:'Clear the lanes to reach the exit.',icon:'🚆'},
+ {name:'Park & Flow',ar:'Traffic Jam',desc:'Clear the board in as few moves as possible.',icon:'🅿️'}
+];
+const totalLevels=30;
+const levelName=i=>modes[0];
+function toast(s){const el=$('#toast');el.textContent=s;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),1900);}
+function save(){try{localStorage.setItem('trafficPuzzleWorld',JSON.stringify({levelIndex,coins,stars,completedLevels,boardState:{levelIndex,moves,won,positions:vehicles.map(v=>({id:v.userData.id,row:v.userData.row,col:v.userData.col})),savedMoves}}))}catch{}}
+try{const data=JSON.parse(localStorage.getItem('trafficPuzzleWorld')||'null');if(data){levelIndex=Math.max(0,Math.min(totalLevels-1,Number(data.levelIndex)||0));coins=Math.max(0,Number(data.coins)||0);stars=Math.max(0,Number(data.stars)||0);completedLevels=Array.isArray(data.completedLevels)?data.completedLevels.filter(n=>Number.isInteger(n)&&n>=0&&n<totalLevels):[];restoredBoardState=data.boardState&&data.boardState.levelIndex===levelIndex?data.boardState:null}}catch{}
+function clearGroup(g){while(g.children.length)g.remove(g.children[g.children.length-1]);}
+function resetBoard(){
+ clearGroup(board);clearGroup(decor);objects=[];vehicles=[];selected=null;moves=0;won=false;savedMoves=[];
+ const mode=0, difficulty=levelIndex%10+1;
+ const ground=mode===2?M.water:M.road;
+ cube(board,0,-.22,0,6.65,.38,6.65,ground,false);
+ for(let r=0;r<6;r++)for(let c=0;c<6;c++){
+  cube(board,c-2.5,-.015,r-2.5,.96,.045,.96,mat(mode===2?'#5abce8':mode===3?'#60758a':'#5b6e81'),false);
+  if((r+c)%2===0)cube(board,c-2.5,.012,r-2.5,.88,.025,.88,mat(mode===2?'#4eb2df':'#607488'),false);
+ }
+ // Miniature city dressing: sidewalks, low-rise blocks, trees and traffic lights around the puzzle.
+ const buildingColors=['#f2bd86','#d8e2ef','#c4d6e7','#f3d7a5','#b6d9d0'];
+ for(let side of [-1,1]){
+  for(let k=0;k<3;k++){
+   const z=-2.6+k*2.55, x=side*4.05;
+   cube(decor,x,-.03,z,.62,.16,1.9,mat('#d7e0e8'),false);
+   const h=1.15+(k%2)*.55;
+   cube(decor,x,.05+h/2,z,.5,h,1.18,mat(buildingColors[(k+(side===1?2:0))%buildingColors.length]),false);
+   for(let wz=-.35;wz<=.4;wz+=.38)for(let wy=.28;wy<h-.12;wy+=.36){
+    cube(decor,x-side*.06,.05+wy,z+wz,.025,.12,.13,M.glass,false);
+   }
+  }
+  for(let k=0;k<3;k++){
+   const z=-2.7+k*2.6,x=side*3.65;
+   const trunk=cube(decor,x,.24,z,.12,.48,.12,M.wood,false);
+   const crown=new THREE.Mesh(new THREE.SphereGeometry(.31,10,8),mat('#3ba96c'));
+   crown.position.set(x,.62,z);crown.castShadow=true;decor.add(crown);
+  }
+ }
+ // Traffic signal posts at the exit make the goal feel like a real city crossing.
+ for(const x of [-3.55,3.55]){
+  cube(decor,x,.48,-.8,.09,.96,.09,M.rubber,false);
+  cube(decor,x,.9,-.8,.24,.42,.18,M.rubber,false);
+  cube(decor,x,.98,-.8,.1,.09,.07,M.red,false);
+  cube(decor,x,.83,-.8,.1,.07,.07,M.yellow,false);
+  cube(decor,x,.69,-.8,.1,.07,.07,M.mint,false);
+ }
+ // Exit lane and goal marker
+ cube(board,3.52,.02,0,.75,.08,1.0,M.mint,false);
+ for(let a=0;a<3;a++)cube(board,3.4,.08,(a-1)*.23,.28,.025,.08,M.white,false);
+ // Light boundary posts
+ for(let r=0;r<6;r++)for(let c=0;c<6;c++)if(r===0||r===5||c===0||c===5){
+  if(!(r===2&&c===5))cube(board,c-2.5,.05,r-2.5,.08,.08,.08,M.edge,false);
+ }
+ const addVehicle=(id,row,col,len,dir,color,kind='car')=>{
+  const v=group(board);v.userData={id,row,col,len,dir,color,kind,goal:false};
+  const width=dir==='h'?len:.72,depth=dir==='v'?len:.72;
+  const material=kind==='cargo'?M.orange:kind==='bus'?M.yellow:kind==='rescue'?M.red:kind==='train'?M.teal:color;
+  cube(v,0,.24,0,width*.87,.42,depth*.87,material);
+  cube(v,0,.49,0,width*.7,.12,depth*.7,kind==='cargo'?M.wood:M.glass);
+  if(dir==='h'){
+   cube(v,width*.25,.22,0,.09,.16,depth*.92,M.rubber);
+   cube(v,-width*.25,.22,0,.09,.16,depth*.92,M.rubber);
+   cube(v,width*.29,.33,-depth*.24,.08,.09,.08,M.white,false);
+  }else{
+   cube(v,0,.22,depth*.25,width*.92,.16,.09,M.rubber);
+   cube(v,0,.22,-depth*.25,width*.92,.16,.09,M.rubber);
+  }
+  const label=kind==='cargo'?M.white:kind==='rescue'?M.white:kind==='train'?M.white:null;
+  if(label)cube(v,0,.57,0,.12,.04,.12,label,false);
+  v.position.set(col-2.5+(dir==='h'?(len-1)/2:0),.08,row-2.5+(dir==='v'?(len-1)/2:0));v.userData.baseY=.08;
+  board.add(v);vehicles.push(v);objects.push(v);return v;
+ };
+ // Hand-authored solvable base layout, gradually adds blockers and new visual themes.
+ const goalRow=2, goalCol=0;
+ const goal=addVehicle('goal',goalRow,goalCol,2,'h',M.red,mode===1?'bus':mode===3?'cargo':mode===4?'rescue':mode===5?'train':'car');
+ goal.userData.goal=true;
+ // These vehicles block the goal lane; moving them vertically creates the opening.
+ const templates=[
+  [[1,2,2,'v'],[1,4,2,'v'],[1,5,2,'v'],[3,0,2,'v'],[3,1,2,'v'],[3,3,2,'v'],[4,4,2,'v'],[4,2,2,'v']],
+  [[1,2,2,'v'],[1,3,2,'v'],[1,5,2,'v'],[3,0,2,'v'],[3,1,2,'v'],[3,4,2,'v'],[4,2,2,'v'],[4,4,2,'v'],[0,0,2,'v']],
+  [[1,2,2,'v'],[1,4,3,'v'],[3,0,2,'v'],[3,1,2,'v'],[3,3,2,'v'],[4,2,2,'v'],[4,4,2,'v'],[0,0,2,'v']],
+  [[1,2,2,'v'],[1,4,2,'v'],[1,5,3,'v'],[3,0,2,'v'],[3,1,2,'v'],[3,3,2,'v'],[4,2,2,'v'],[4,4,2,'v'],[0,0,2,'v']]
+ ];
+ const template=templates[levelIndex%templates.length];
+ const mirrorTemplate=Math.floor(levelIndex/templates.length)%2===1;
+ const queueCol=(levelIndex%3)*2;
+ // Keep each board within the validated blocker budget so the generated campaign layouts remain solvable.
+ let idx=0;
+ const placedCells=new Set();
+ for(const v of vehicles){const d=v.userData;for(let k=0;k<d.len;k++)placedCells.add((d.row+(d.dir==='v'?k:0))+','+(d.col+(d.dir==='h'?k:0)))}
+ // Two horizontal traffic queues protect the central blocker, so early stages teach the player to clear a lane before moving the red car.
+ const addHorizontalQueue=(id,row,col,len,color)=>{
+  const cells=[];for(let k=0;k<len;k++)cells.push(row+','+(col+k));
+  if(cells.some(key=>placedCells.has(key)))return false;
+  addVehicle(id,row,col,len,'h',color,'car');for(const key of cells)placedCells.add(key);return true;
+ };
+ addHorizontalQueue('queueTop',0,queueCol,2,M.yellow);
+ for(const [r,c,len,dir] of template){
+  if(idx>5)break;
+  const actualCol=mirrorTemplate?(dir==='v'?5-c:6-c-len):c;
+  if(r<0||actualCol<0||r+(dir==='v'?len-1:0)>5||actualCol+(dir==='h'?len-1:0)>5)continue;
+  const cells=[];let collision=false;
+  for(let k=0;k<len;k++){const key=(r+(dir==='v'?k:0))+','+(actualCol+(dir==='h'?k:0));if(placedCells.has(key)){collision=true;break}cells.push(key)}
+  if(collision)continue;
+  const kind=mode===1&&idx%3===0?'bus':mode===3&&idx%3===0?'cargo':mode===4&&idx===0?'rescue':mode===5&&idx===0?'train':'car';
+  addVehicle('v'+idx,r,actualCol,len,dir,colors[(idx+mode)%colors.length],kind);
+  for(const key of cells)placedCells.add(key);
+  idx++;
+ }
+ // For bridge stages, add visible bridge beams alongside the board; they are part of the same campaign puzzle theme.
+ if(mode===2){
+  cube(decor,0,-.12,-3.65,6.8,.12,.42,M.wood,false);
+  for(let c=-2;c<=2;c++)cube(decor,c,-.02,-3.65,.14,.45,.14,M.steel);
+ }
+ // Cargo / terminal scenery makes the mode legible without leaving the campaign.
+ if(mode===3){for(let c=-2;c<=2;c+=2)cube(decor,c,.02,3.55,.62,.16,.62,M.wood,false)}
+ if(mode===5){for(let c=-2;c<=2;c++)cube(decor,c,.02,3.58,.08,.1,.7,M.rail,false)}
+ // Restore the in-progress board after app restarts, only when it belongs to this level.
+ if(restoredBoardState&&restoredBoardState.levelIndex===levelIndex){
+  for(const p of restoredBoardState.positions||[]){const v=vehicles.find(x=>x.userData.id===p.id);if(!v)continue;v.userData.row=p.row;v.userData.col=p.col;v.position.x=p.col-2.5+(v.userData.dir==='h'?(v.userData.len-1)/2:0);v.position.z=p.row-2.5+(v.userData.dir==='v'?(v.userData.len-1)/2:0)}
+  moves=Math.max(0,Number(restoredBoardState.moves)||0);won=Boolean(restoredBoardState.won);savedMoves=Array.isArray(restoredBoardState.savedMoves)?restoredBoardState.savedMoves:[];restoredBoardState=null;
+ }
+ // Make the target and pieces sit on the cell centers, with their row/col as source of truth.
+ updateHUD();drawSelection();save();
+}
+function spendCoins(amount){if(coins<amount){toast('Not enough coins. Complete more levels to earn coins.');return false}coins-=amount;save();updateHUD();return true}
+function showStore(){openModal('🪙 Traffic Command Store','The game is free. Earn coins by playing and spend them on hints or skipping a difficult level. Real-money purchases are not enabled in this build.', '<div class="levelrow"><span>🧭 One hint<small>Helps you choose the right vehicle</small></span><button id="buyHint" class="gold">15 🪙</button></div><div class="levelrow"><span>⏭️ Skip level<small>Skip the current level using in-game coins</small></span><button id="buySkip" class="gold">100 🪙</button></div><div class="levelrow"><span>💳 Real-money coin purchases<small>Not available in this build</small></span><button disabled>Coming soon</button></div>');}
+function updateHUD(){
+ const mode=levelName(levelIndex),difficulty=levelIndex%10+1;
+ $('#coins').textContent=coins;$('#level').textContent=(levelIndex+1)+' / '+totalLevels;
+ $('#stars').textContent=stars+' ★';$('#moves').textContent=moves;
+ $('#levelbar').style.width=((levelIndex+1)/totalLevels*100)+'%';
+ $('#mission').textContent='🚦 '+mode.ar+' · Level '+(levelIndex+1);
+ $('#description').textContent=mode.desc;
+ $('#next').disabled=!won;$('#hint').style.display=(won||moves>0)?'none':'block';
+ $('#hint').textContent='Move blocking vehicles to clear the middle lane, then drag the red vehicle to the green exit.';
+}
+function drawSelection(){for(const v of vehicles){v.scale.setScalar(v===selected?1.055:1);}}
+function occupiedCells(ignore=null){
+ const map=new Set();
+ for(const v of vehicles){if(v===ignore)continue;const d=v.userData;for(let n=0;n<d.len;n++){const r=d.row+(d.dir==='v'?n:0),c=d.col+(d.dir==='h'?n:0);map.add(r+','+c)}}
+ return map;
+}
+function canMove(v,delta){
+ const d=v.userData, occ=occupiedCells(v), steps=Math.round(delta);
+ if(!steps)return false;
+ for(let n=1;n<=Math.abs(steps);n++){
+  const s=Math.sign(steps)*n;
+  const r=d.row+(d.dir==='v'?s:0),c=d.col+(d.dir==='h'?s:0);
+  for(let k=0;k<d.len;k++){
+   const rr=r+(d.dir==='v'?k:0),cc=c+(d.dir==='h'?k:0);
+   if(rr<0||rr>5||cc<0||(!d.goal&&cc>5))return false;
+   if(cc<=5&&occ.has(rr+','+cc))return false;
+  }
+ }
+ return true;
+}
+function moveVehicle(v,delta){
+ if(!v||won)return;
+ const d=v.userData,steps=Math.round(delta);
+ if(!steps||!canMove(v,steps)){feedback('error');toast('That path is blocked. Try another direction.');return}
+ savedMoves.push({id:d.id,row:d.row,col:d.col});
+ if(d.dir==='v')d.row+=steps;else d.col+=steps;
+ v.position.x=d.col-2.5+(d.dir==='h'?(d.len-1)/2:0);v.position.z=d.row-2.5+(d.dir==='v'?(d.len-1)/2:0);moves++;selected=v;feedback('tap');drawSelection();updateHUD();
+ if(d.goal&&d.col+d.len>5)finishLevel();else save();
+}
+function finishLevel(){
+ won=true;
+ const earned=moves<=Math.max(3,levelIndex%10+2)?3:moves<=Math.max(6,levelIndex%10+5)?2:1;
+ const firstClear=!completedLevels.includes(levelIndex);
+ if(firstClear){completedLevels.push(levelIndex);stars+=earned;coins+=20+earned*10;}
+ save();updateHUD();
+ $('#next').disabled=false;$('#mission').textContent='🎉 LEVEL COMPLETE';
+ $('#description').textContent=firstClear?'+'+(20+earned*10)+' coins · '+earned+' stars. Keep going!':'You replayed this level. Rewards are only granted once.';
+ $('#hint').style.display='block';$('#hint').textContent='Level complete! Continue to the next challenge.';
+ toast(firstClear?'Solved! +'+(20+earned*10)+' coins · '+earned+' stars':'Level replayed; no duplicate reward.');
+}
+function raycast(e){
+ const rect=canvas.getBoundingClientRect(),x=(e.clientX-rect.left)/rect.width*2-1,y=-((e.clientY-rect.top)/rect.height*2-1);
+ const ray=new THREE.Raycaster();ray.setFromCamera({x,y},camera);return ray;
+}
+let pointerStart=null;
+canvas.style.touchAction='none';
+canvas.addEventListener('contextmenu',e=>e.preventDefault());
+canvas.addEventListener('pointerdown',e=>{
+ e.preventDefault();
+ try{canvas.setPointerCapture(e.pointerId)}catch{}
+ pointerStart={x:e.clientX,y:e.clientY,at:Date.now(),v:null,pointerId:e.pointerId};
+ const hits=raycast(e).intersectObjects(vehicles,true);
+ if(hits.length){let o=hits[0].object;while(o&&!vehicles.includes(o))o=o.parent;if(o){selected=o;pointerStart.v=o;drawSelection()}}
 });
-let down=null;renderer.domElement.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY}});renderer.domElement.addEventListener('pointerup',e=>{if(!down)return;const dx=e.clientX-down.x,dy=e.clientY-down.y;if(Math.abs(dx)+Math.abs(dy)<8){const ray=new THREE.Raycaster();ray.setFromCamera({x:e.clientX/innerWidth*2-1,y:-(e.clientY/innerHeight)*2+1},camera);const hits=ray.intersectObjects(buses,true);if(hits.length){let o=hits[0].object;while(o&&o.parent!==scene)o=o.parent;const b=buses.find(v=>v===o);if(b)toast('Bus #'+b.userData.id+' · '+(b.userData.driver?'chauffeur affecté':'sans chauffeur')+(b.userData.travel?' · en trajet':''))}}down=null});
-window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;setCamera();renderer.setSize(innerWidth,innerHeight)});
-let last=0;function animate(now){requestAnimationFrame(animate);const dt=Math.min(.05,(now-last)/1000||0);last=now;for(const b of buses){if(b.userData.travel){b.position.z+=dt*(5+(b.userData.route||0)*1.3);if(b.position.z>29){b.position.z=-24;b.userData.travel=0;const route=state.routes[b.userData.route??state.active];b.userData.route=null;if(route){state.money+=route.earning;state.passengers+=route.passengers;state.completed++;update();toast('Trajet terminé : +'+route.earning+' pièces · +'+route.passengers+' voyageurs');checkAchievements()}}}}renderer.render(scene,camera)}
-update();animate(0);
+canvas.addEventListener('pointerup',e=>{
+ if(!pointerStart)return;
+ const start=pointerStart;pointerStart=null;
+ const dx=e.clientX-start.x,dy=e.clientY-start.y;
+ if(start.v&&(Math.max(Math.abs(dx),Math.abs(dy))>10)){
+  const v=start.v,dir=v.userData.dir;
+  const cellPixels=innerWidth/8.2;
+  const val=dir==='h'?dx:dy;
+  const cross=dir==='h'?dy:dx;
+  if(Math.abs(cross)>Math.abs(val)*1.25){feedback('error');toast('Drag along the vehicle lane.');return;}
+  let delta=Math.round(val/cellPixels);
+  if(!delta&&Math.abs(val)>10)delta=Math.sign(val);
+  moveVehicle(v,delta);
+ }else if(!start.v){
+  const hits=raycast(e).intersectObjects(vehicles,true);
+  if(hits.length){let o=hits[0].object;while(o&&!vehicles.includes(o))o=o.parent;selected=o;drawSelection()}
+ }
+});
+canvas.addEventListener('pointercancel',()=>{pointerStart=null;});
+canvas.addEventListener('lostpointercapture',()=>{pointerStart=null;});
+$('#undo').onclick=()=>{if(won||!savedMoves.length){toast('Nothing to undo.');return}const last=savedMoves.pop(),v=vehicles.find(x=>x.userData.id===last.id);if(v){v.userData.row=last.row;v.userData.col=last.col;v.position.x=last.col-2.5+(v.userData.dir==='h'?(v.userData.len-1)/2:0);v.position.z=last.row-2.5+(v.userData.dir==='v'?(v.userData.len-1)/2:0);moves=Math.max(0,moves-1);selected=v;drawSelection();updateHUD();save()}};
+$('#restart').onclick=()=>{resetBoard();toast('Level restarted.');};
+$('#next').onclick=()=>{if(!won)return;if(levelIndex<totalLevels-1)levelIndex++;else{openModal('🏆 CAMPAIGN COMPLETE','You completed all available levels in this build.','<button id="replay" class="primary">Play again</button>');return}resetBoard();toast('Next level!');};
+$('#store').onclick=showStore;
+$('#pause').onclick=()=>openModal('Game paused','Your progress is saved automatically on this device.','<button id="resume" class="primary">Resume</button><button id="levels">Campaign map</button><button id="settings">Settings</button>');
+function openModal(title,text,html=''){ $('#modalTitle').textContent=title;$('#modalText').textContent=text;$('#modalBody').innerHTML=html;$('#modal').classList.add('open');$('#shade').classList.add('open');}
+function closeModal(){$('#modal').classList.remove('open');$('#shade').classList.remove('open')}
+$('#close').onclick=closeModal;$('#shade').onclick=closeModal;
+$('#modalBody').addEventListener('click',e=>{
+ const b=e.target.closest('button');if(!b)return;
+ if(b.id==='resume'){saveSettings();closeModal();return}
+ if(b.id==='toggleSound'){settings.sound=!settings.sound;saveSettings();openModal('Settings','Customize your game. Your settings are saved on this device.','<div class="levelrow"><span>🔊 Sound effects<small>Simple sounds for moves, errors, and wins</small></span><button id="toggleSound" class="'+(settings.sound?'primary':'')+'">'+(settings.sound?'On':'Off')+'</button></div><div class="levelrow"><span>📳 Vibration<small>Light vibration for moves and alerts (if supported)</small></span><button id="toggleVibration" class="'+(settings.vibration?'primary':'')+'">'+(settings.vibration?'On':'Off')+'</button></div><div class="levelrow"><span>💾 Save progress<small>Levels, coins, and stars save automatically on this device</small></span><button disabled>Automatic</button></div><button id="resume" class="primary" style="width:100%;margin-top:12px">Save & return</button>');return}
+ if(b.id==='toggleVibration'){settings.vibration=!settings.vibration;saveSettings();openModal('Settings','Customize your game. Your settings are saved on this device.','<div class="levelrow"><span>🔊 Sound effects<small>Simple sounds for moves, errors, and wins</small></span><button id="toggleSound" class="'+(settings.sound?'primary':'')+'">'+(settings.sound?'On':'Off')+'</button></div><div class="levelrow"><span>📳 Vibration<small>Light vibration for moves and alerts (if supported)</small></span><button id="toggleVibration" class="'+(settings.vibration?'primary':'')+'">'+(settings.vibration?'On':'Off')+'</button></div><div class="levelrow"><span>💾 Save progress<small>Levels, coins, and stars save automatically on this device</small></span><button disabled>Automatic</button></div><button id="resume" class="primary" style="width:100%;margin-top:12px">Save & return</button>');return}
+ if(b.id==='buyHint'){
+  if(coins<15){toast('You need 15 coins to buy a hint.');return;}
+  closeModal();
+  const findHintMove=()=>{
+   const meta=vehicles.map(v=>({id:v.userData.id,row:v.userData.row,col:v.userData.col,len:v.userData.len,dir:v.userData.dir,goal:v.userData.goal}));
+   const keyState=state=>state.map(p=>p.row+','+p.col).join('|');
+   const initial=meta.map(v=>({row:v.row,col:v.col}));
+   const queue=[{state:initial,first:null}],seen=new Set([keyState(initial)]);
+   const cellKeys=(v,p)=>Array.from({length:v.len},(_,k)=>(p.row+(v.dir==='v'?k:0))+','+(p.col+(v.dir==='h'?k:0)));
+   for(let head=0;head<queue.length;head++){
+    const node=queue[head],occupied=new Set();
+    node.state.forEach((p,i)=>cellKeys(meta[i],p).forEach(k=>occupied.add(k)));
+    for(let i=0;i<meta.length;i++){
+     const v=meta[i],p=node.state[i],own=new Set(cellKeys(v,p)),others=new Set([...occupied].filter(k=>!own.has(k)));
+     for(const sign of [-1,1]){
+      for(let distance=1;distance<=6;distance++){
+       const delta=sign*distance,next={row:p.row+(v.dir==='v'?delta:0),col:p.col+(v.dir==='h'?delta:0)};
+       if(next.row<0||next.row+(v.dir==='v'?v.len-1:0)>5||next.col<0||(!v.goal&&next.col+(v.dir==='h'?v.len-1:0)>5))break;
+       const keys=cellKeys(v,next);
+       if(keys.some(k=>others.has(k)))break;
+       if(v.goal&&next.col+v.len>5)return node.first||{id:v.id,delta};
+       const state=node.state.map(q=>({...q}));state[i]=next;
+       const sig=keyState(state);if(seen.has(sig))continue;seen.add(sig);
+       queue.push({state,first:node.first||{id:v.id,delta}});
+      }
+     }
+    }
+   }
+   return null;
+  };
+  const hint=findHintMove();
+  if(hint){
+   const choice=vehicles.find(v=>v.userData.id===hint.id);
+   if(!choice){toast('Could not identify the suggested move.');return;}
+   if(!spendCoins(15))return;
+   selected=choice;drawSelection();
+   const dir=choice.userData.dir==='v'?(hint.delta<0?'up':'down'):(hint.delta<0?'left':'right');
+   toast('Hint: Move the highlighted vehicle '+Math.abs(hint.delta)+'  spaces '+dir+'.');
+  }else toast('No solution was found for this board. Restart without spending coins.');
+
+  return;
+ }
+ if(b.id==='buySkip'){if(!spendCoins(100))return;closeModal();if(levelIndex<totalLevels-1){levelIndex++;resetBoard();toast('Level skipped for 100 coins.')}else{won=true;updateHUD();openModal('🏆 Campaign complete','You completed all levels in this build.','<button id="replay" class="primary">Play again</button>')}return}
+ if(b.id==='replay'){levelIndex=0;resetBoard();closeModal();return}
+ if(b.id==='settings'){openModal('Settings','Customize your game. Your settings are saved on this device.','<div class="levelrow"><span>🔊 Sound effects<small>Simple sounds for moves, errors, and wins</small></span><button id="toggleSound" class="'+(settings.sound?'primary':'')+'">'+(settings.sound?'On':'Off')+'</button></div><div class="levelrow"><span>📳 Vibration<small>Light vibration for moves and alerts (if supported)</small></span><button id="toggleVibration" class="'+(settings.vibration?'primary':'')+'">'+(settings.vibration?'On':'Off')+'</button></div><div class="levelrow"><span>💾 Save progress<small>Levels, coins, and stars save automatically on this device</small></span><button disabled>Automatic</button></div><button id="resume" class="primary" style="width:100%;margin-top:12px">Save & return</button>');return}
+ if(b.id==='levels'){
+  let html='<div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin-top:12px">';
+  for(let i=0;i<totalLevels;i++){const completed=completedLevels.includes(i),unlocked=i<=levelIndex||completed;html+='<button data-level="'+i+'" '+(unlocked?'':'disabled')+' style="min-height:46px;padding:6px;'+(completed?'background:#245344;border-color:#4c9d7c;':i===levelIndex?'background:#77f0bd;color:#102438;border-color:#b5ffe0;':'')+'">'+(completed?'✓ ':'')+(i+1)+'</button>'}
+  html+='</div><div class="muted" style="margin-top:10px">Green: completed · Light: current level · Grey: locked</div>';
+  openModal('Campaign map','Choose any level you have already unlocked.',html);return;
+ }
+ if(b.dataset.level){const n=Number(b.dataset.level);if(n<=levelIndex||completedLevels.includes(n)){levelIndex=n;resetBoard();closeModal()}return}
+});
+function resize(){renderer.setSize(innerWidth,innerHeight);const aspect=innerWidth/innerHeight;const viewWidth=8.2;camera.left=-viewWidth/2;camera.right=viewWidth/2;camera.top=viewWidth/aspect/2;camera.bottom=-viewWidth/aspect/2;camera.updateProjectionMatrix();}
+window.addEventListener('resize',resize);resize();
+function animate(){requestAnimationFrame(animate);renderer.render(scene,camera)}
+resetBoard();animate();
