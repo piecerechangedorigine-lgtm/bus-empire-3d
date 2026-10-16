@@ -228,19 +228,29 @@ function raycast(e){
  const ray=new THREE.Raycaster();ray.setFromCamera({x,y},camera);return ray;
 }
 let pointerStart=null;
-canvas.addEventListener('pointerdown',e=>{pointerStart={x:e.clientX,y:e.clientY,at:Date.now(),v:null};const hits=raycast(e).intersectObjects(vehicles,true);if(hits.length){let o=hits[0].object;while(o&&!vehicles.includes(o))o=o.parent;if(o){selected=o;pointerStart.v=o;drawSelection()}}});
+canvas.addEventListener('pointerdown',e=>{
+ e.preventDefault();
+ try{canvas.setPointerCapture(e.pointerId)}catch{}
+ pointerStart={x:e.clientX,y:e.clientY,at:Date.now(),v:null};
+ const hits=raycast(e).intersectObjects(vehicles,true);
+ if(hits.length){let o=hits[0].object;while(o&&!vehicles.includes(o))o=o.parent;if(o){selected=o;pointerStart.v=o;drawSelection()}}
+});
 canvas.addEventListener('pointerup',e=>{
- if(!pointerStart)return;const dx=e.clientX-pointerStart.x,dy=e.clientY-pointerStart.y;
- if(pointerStart.v&&(Math.abs(dx)+Math.abs(dy)>12)){
-  const v=pointerStart.v,dir=v.userData.dir;
+ if(!pointerStart)return;
+ const start=pointerStart;pointerStart=null;
+ const dx=e.clientX-start.x,dy=e.clientY-start.y;
+ if(start.v&&(Math.abs(dx)+Math.abs(dy)>12)){
+  const v=start.v,dir=v.userData.dir;
   let delta=dir==='h'?Math.round(dx/(innerWidth/8.2)):Math.round(dy/(innerWidth/8.2));
   if(!delta){const val=dir==='h'?dx:dy;delta=Math.sign(val);}
   moveVehicle(v,delta);
- }else if(!pointerStart.v){
-  const hits=raycast(e).intersectObjects(vehicles,true);if(hits.length){let o=hits[0].object;while(o&&!vehicles.includes(o))o=o.parent;selected=o;drawSelection()}
+ }else if(!start.v){
+  const hits=raycast(e).intersectObjects(vehicles,true);
+  if(hits.length){let o=hits[0].object;while(o&&!vehicles.includes(o))o=o.parent;selected=o;drawSelection()}
  }
- pointerStart=null;
 });
+canvas.addEventListener('pointercancel',()=>{pointerStart=null;});
+canvas.addEventListener('lostpointercapture',()=>{pointerStart=null;});
 $('#undo').onclick=()=>{if(won||!savedMoves.length){toast('لا توجد حركة للتراجع عنها.');return}const last=savedMoves.pop(),v=vehicles.find(x=>x.userData.id===last.id);if(v){v.userData.row=last.row;v.userData.col=last.col;v.position.x=last.col-2.5+(v.userData.dir==='h'?(v.userData.len-1)/2:0);v.position.z=last.row-2.5+(v.userData.dir==='v'?(v.userData.len-1)/2:0);moves=Math.max(0,moves-1);selected=v;drawSelection();updateHUD();save()}};
 $('#restart').onclick=()=>{resetBoard();toast('أُعيد ترتيب المرحلة.');};
 $('#next').onclick=()=>{if(!won)return;if(levelIndex<totalLevels-1)levelIndex++;else{openModal('🏆 أكملت Traffic Command!','أكملت جميع المراحل المتاحة في هذه النسخة.','<button id="replay" class="primary">العب من البداية</button>');return}resetBoard();toast('المرحلة التالية!');};
